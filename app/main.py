@@ -12,6 +12,7 @@ from detection.brute_force import (
 )
 
 
+# Project directories
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 LOG_FILE = (
@@ -21,36 +22,47 @@ LOG_FILE = (
     / "authentication.log"
 )
 
+# Detection settings
+BRUTE_FORCE_THRESHOLD = 5
+DETECTION_WINDOW_SECONDS = 60
+
+# Application information
+APP_NAME = "AllamSec"
+APP_VERSION = "0.3.0"
+
 
 def display_banner():
+    """Display the AllamSec application banner."""
 
     print("=" * 55)
-    print("                    SentinelSOC")
-    print("        Security Monitoring & Threat Detection")
+    print(f"{APP_NAME:^55}")
+    print(f"{'Security Monitoring & Threat Detection':^55}")
     print("=" * 55)
 
 
 def initialize_system():
+    """Initialize the AllamSec monitoring system."""
 
-    print("\nInitializing SentinelSOC...")
+    print(f"\nInitializing {APP_NAME}...")
 
     current_time = datetime.now()
 
-    print(f"System started at: {current_time}")
+    print(f"System started at: {current_time:%Y-%m-%d %H:%M:%S}")
     print("System Status: ONLINE")
     print("Monitoring Mode: DEVELOPMENT")
     print("Log Source: Local Authentication Logs")
-    print("Project Version: 0.3.0")
+    print(f"Project Version: {APP_VERSION}")
 
     print("\nInitialization complete.")
 
 
 def main():
+    """Run the AllamSec security monitoring application."""
 
     display_banner()
-
     initialize_system()
 
+    # Step 1: Load authentication logs
     print("\nLoading authentication logs...")
 
     if not LOG_FILE.is_file():
@@ -61,18 +73,21 @@ def main():
 
     print(f"Successfully loaded {len(events)} valid events.")
 
+    # Step 2: Analyze authentication activity
     statistics = analyze_authentication_events(events)
 
     display_report(statistics, invalid_lines)
 
-    print("\nRunning brute-force detection engine...")
+    # Step 3: Run threat detection
+    print("\nRunning threat detection engine...")
 
     alerts = detect_brute_force(
         events,
-        threshold=5,
-        window_seconds=60
+        threshold=BRUTE_FORCE_THRESHOLD,
+        window_seconds=DETECTION_WINDOW_SECONDS
     )
 
+    # Step 4: Display security alerts
     display_security_alerts(alerts)
 
 

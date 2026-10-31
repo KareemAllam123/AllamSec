@@ -4,23 +4,35 @@ from datetime import timedelta
 
 def detect_brute_force(events, threshold=5, window_seconds=60):
     """
-    Detects possible brute-force attacks and successful
-    logins following repeated failed attempts.
+    Detect possible brute-force attacks and successful logins
+    following repeated failed authentication attempts.
 
-    Returns a list of security alerts.
+    A brute-force alert is generated when an IP address makes
+    a specified number of failed login attempts against the
+    same account within the detection window.
+
+    A possible account compromise alert is generated when
+    a successful login occurs shortly after a brute-force alert.
+
+    Returns:
+        list: Security alerts detected in the authentication logs.
     """
 
+    # Validate detection settings
     if threshold < 1 or window_seconds <= 0:
-        raise ValueError("Threshold and window must be positive.")
+        raise ValueError(
+            "Threshold and detection window must be positive."
+        )
 
     alerts = []
 
+    # Store recent failed login timestamps for each IP/account pair
     failed_attempts = defaultdict(deque)
 
-    # Track when each IP/account combination triggered
-    # a brute-force alert.
+    # Track active brute-force detections
     active_brute_force = {}
 
+    # Process events chronologically
     sorted_events = sorted(
         events,
         key=lambda event: event["timestamp"]
@@ -35,31 +47,38 @@ def detect_brute_force(events, threshold=5, window_seconds=60):
         timestamp = event["timestamp"]
         event_type = event["event_type"]
 
+        # Identify a unique IP address and account combination
         key = (ip_address, username)
 
-        # Remove expired brute-force alert tracking.
+        # Remove expired brute-force detection tracking
         if key in active_brute_force:
-            last_alert_time = active_brute_force[key]
+
+            last_alert_time = active_brute_force[key]["timestamp"]
 
             if timestamp - last_alert_time > time_window:
                 del active_brute_force[key]
 
         # ----------------------------------------
-        # Detect failed login attempts
+        # Detect repeated failed login attempts
         # ----------------------------------------
 
         if event_type == "FAILED_LOGIN":
 
             attempts = failed_attempts[key]
 
+            # Add the current failed login timestamp
             attempts.append(timestamp)
 
-            # Remove attempts outside the time window.
+            # Remove attempts outside the detection window
             while attempts and timestamp - attempts[0] > time_window:
                 attempts.popleft()
 
-            # Generate an alert when the threshold is reached.
-            if len(attempts) == threshold:
+            # Generate an alert when the threshold is reached
+            # and there is no active alert for this IP/account.
+            if (
+                len(attempts) >= threshold
+                and key not in active_brute_force
+            ):
 
                 alert = {
                     "alert_type": "POSSIBLE_BRUTE_FORCE",
@@ -78,8 +97,12 @@ def detect_brute_force(events, threshold=5, window_seconds=60):
 
                 alerts.append(alert)
 
-                # Remember when the brute-force alert occurred.
-                active_brute_force[key] = timestamp
+                # Save information about the detected attack
+                active_brute_force[key] = {
+                    "timestamp": timestamp,
+                    "first_attempt": attempts[0],
+                    "failed_attempts": len(attempts)
+                }
 
         # ----------------------------------------
         # Detect successful login after brute force
@@ -89,7 +112,9 @@ def detect_brute_force(events, threshold=5, window_seconds=60):
 
             if key in active_brute_force:
 
-                last_alert_time = active_brute_force[key]
+                attack = active_brute_force[key]
+
+                last_alert_time = attack["timestamp"]
 
                 time_difference = (
                     timestamp - last_alert_time
@@ -102,8 +127,8 @@ def detect_brute_force(events, threshold=5, window_seconds=60):
                         "severity": "CRITICAL",
                         "source_ip": ip_address,
                         "target_account": username,
-                        "failed_attempts": threshold,
-                        "first_attempt": last_alert_time,
+                        "failed_attempts": attack["failed_attempts"],
+                        "first_attempt": attack["first_attempt"],
                         "last_attempt": timestamp,
                         "time_window_seconds": window_seconds,
                         "description": (
@@ -115,11 +140,10 @@ def detect_brute_force(events, threshold=5, window_seconds=60):
 
                     alerts.append(alert)
 
-                # Clear the active alert so subsequent
-                # successful logins don't create duplicates.
+                # Prevent duplicate compromise alerts
                 del active_brute_force[key]
 
-            # Reset failed attempts after a successful login.
+            # Reset failed login history after a successful login
             failed_attempts.pop(key, None)
 
     return alerts
@@ -127,15 +151,16 @@ def detect_brute_force(events, threshold=5, window_seconds=60):
 
 def display_security_alerts(alerts):
     """
-    Displays security alerts in the terminal.
+    Display AllamSec security alerts in the terminal.
     """
 
     print("\n" + "=" * 60)
-    print("                 SECURITY ALERTS")
+    print(f"{'AllamSec Security Alerts':^60}")
     print("=" * 60)
 
     if not alerts:
         print("\nNo suspicious authentication patterns detected.")
+        print("=" * 60)
         return
 
     print(f"\nTotal Alerts Generated: {len(alerts)}")
@@ -158,73 +183,3 @@ def display_security_alerts(alerts):
         print(f"\nDescription: {alert['description']}")
 
     print("\n" + "=" * 60)
-
-    def test_detects_possible_account_compromise(self):
-
-        start = datetime(2026, 10, 28, 10, 0, 0)
-
-        events = []
-
-        # Five failed login attempts.
-        for i in range(5):
-            events.append(
-                self.create_event(
-                    start + timedelta(seconds=i * 2),
-                    "192.168.1.10",
-                    "admin"
-                )
-            )
-
-        # Successful login after the failed attempts.
-        events.append({
-            "timestamp": start + timedelta(seconds=15),
-            "event_type": "SUCCESS_LOGIN",
-            "ip_address": "192.168.1.10",
-            "username": "admin"
-        })
-
-        alerts = detect_brute_force(events)
-
-        self.assertEqual(len(alerts), 2)
-
-        self.assertEqual(
-            alerts[1]["alert_type"],
-            "POSSIBLE_ACCOUNT_COMPROMISE"
-        )
-
-        self.assertEqual(
-            alerts[1]["severity"],
-            "CRITICAL"
-        )
-
-    def test_no_compromise_alert_after_time_window(self):
-
-        start = datetime(2026, 10, 28, 10, 0, 0)
-
-        events = []
-
-        for i in range(5):
-            events.append(
-                self.create_event(
-                    start + timedelta(seconds=i * 2),
-                    "192.168.1.10",
-                    "admin"
-                )
-            )
-
-        # Successful login occurs too late.
-        events.append({
-            "timestamp": start + timedelta(minutes=5),
-            "event_type": "SUCCESS_LOGIN",
-            "ip_address": "192.168.1.10",
-            "username": "admin"
-        })
-
-        alerts = detect_brute_force(events)
-
-        self.assertEqual(len(alerts), 1)
-
-        self.assertEqual(
-            alerts[0]["alert_type"],
-            "POSSIBLE_BRUTE_FORCE"
-        )

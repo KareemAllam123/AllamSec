@@ -1,28 +1,94 @@
-# Python virtual environment
+# ==========================================
+# AllamSec - Git Ignore Configuration
+# Security Monitoring & Threat Detection
+# ==========================================
+
+
+# ------------------------------------------
+# Python virtual environments
+# ------------------------------------------
 .venv/
 venv/
+env/
 
-# Python cache
+
+# ------------------------------------------
+# Python cache and compiled files
+# ------------------------------------------
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Environment variables
+
+# ------------------------------------------
+# Python testing and coverage
+# ------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+
+# ------------------------------------------
+# Environment variables and secrets
+# ------------------------------------------
 .env
 .env.*
+!.env.example
 
+*.pem
+*.key
+*.p12
+*.pfx
+
+
+# ------------------------------------------
 # Local databases
+# ------------------------------------------
 *.db
+*.db-*
+*.sqlite
+*.sqlite-*
 *.sqlite3
+*.sqlite3-*
 
-# IDE settings
+
+# ------------------------------------------
+# IDE and editor settings
+# ------------------------------------------
 .vscode/
+.idea/
+*.swp
+*.swo
 
+
+# ------------------------------------------
 # Operating system files
+# ------------------------------------------
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Generated reports
+
+# ------------------------------------------
+# Generated reports and exports
+# ------------------------------------------
 reports/
+exports/
 
-# Real or sensitive logs
+
+# ------------------------------------------
+# Private or sensitive security logs
+# ------------------------------------------
 data/private/
+data/raw/
+
+
+# ------------------------------------------
+# Flask application files
+# ------------------------------------------
+instance/
+.webassets-cache/
