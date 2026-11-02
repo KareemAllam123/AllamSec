@@ -16,6 +16,10 @@ from detection.port_scan import (
     detect_port_scans,
     display_network_alerts,
 )
+from detection.risk_scoring import (
+    score_alerts,
+    display_risk_report,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -33,7 +37,7 @@ PORT_SCAN_THRESHOLD = 10
 DETECTION_WINDOW_SECONDS = 60
 
 APP_NAME = "AllamSec"
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.5.0"
 
 
 def display_banner():
@@ -46,6 +50,7 @@ def display_banner():
 def initialize_system():
     print(f"\nInitializing {APP_NAME}...")
     current_time = datetime.now()
+
     print(f"System started at: {current_time:%Y-%m-%d %H:%M:%S}")
     print("System Status: ONLINE")
     print("Monitoring Mode: DEVELOPMENT")
@@ -62,6 +67,7 @@ def monitor_authentication():
         return []
 
     events, invalid_lines = read_log_file(AUTH_LOG_FILE)
+
     print(f"Successfully loaded {len(events)} authentication events.")
 
     statistics = analyze_authentication_events(events)
@@ -103,6 +109,32 @@ def monitor_network():
     return alerts
 
 
+def display_monitoring_summary(authentication_alerts, network_alerts):
+    all_alerts = authentication_alerts + network_alerts
+    prioritized_alerts = score_alerts(all_alerts)
+
+    print("\n" + "=" * 60)
+    print(f"{'AllamSec Monitoring Summary':^60}")
+    print("=" * 60)
+
+    print(f"Authentication Alerts: {len(authentication_alerts)}")
+    print(f"Network Alerts:        {len(network_alerts)}")
+    print(f"Total Security Alerts: {len(all_alerts)}")
+
+    if prioritized_alerts:
+        highest_risk = prioritized_alerts[0]
+
+        print(f"Highest Risk Score:    {highest_risk['risk_score']}/100")
+        print(f"Highest Severity:      {highest_risk['severity']}")
+        print(f"Top Threat:            {highest_risk['alert_type']}")
+    else:
+        print("Highest Risk Score:    N/A")
+        print("Highest Severity:      N/A")
+        print("Top Threat:            None")
+
+    print("=" * 60)
+
+
 def main():
     display_banner()
     initialize_system()
@@ -110,15 +142,14 @@ def main():
     authentication_alerts = monitor_authentication()
     network_alerts = monitor_network()
 
-    total_alerts = len(authentication_alerts) + len(network_alerts)
+    all_alerts = authentication_alerts + network_alerts
 
-    print("\n" + "=" * 60)
-    print(f"{'AllamSec Monitoring Summary':^60}")
-    print("=" * 60)
-    print(f"Authentication Alerts: {len(authentication_alerts)}")
-    print(f"Network Alerts:        {len(network_alerts)}")
-    print(f"Total Security Alerts: {total_alerts}")
-    print("=" * 60)
+    display_risk_report(all_alerts)
+
+    display_monitoring_summary(
+        authentication_alerts,
+        network_alerts,
+    )
 
 
 if __name__ == "__main__":
