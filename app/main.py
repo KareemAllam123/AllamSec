@@ -21,6 +21,13 @@ from detection.risk_scoring import (
     display_risk_report,
 )
 
+from database.db_manager import (
+    initialize_database,
+    save_events,
+    save_alerts,
+    display_database_summary,
+)
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -37,7 +44,7 @@ PORT_SCAN_THRESHOLD = 10
 DETECTION_WINDOW_SECONDS = 60
 
 APP_NAME = "AllamSec"
-APP_VERSION = "0.5.0"
+APP_VERSION = "0.6.0"
 
 
 def display_banner():
@@ -56,6 +63,10 @@ def initialize_system():
     print("Monitoring Mode: DEVELOPMENT")
     print("Log Sources: Authentication and Network Logs")
     print(f"Project Version: {APP_VERSION}")
+
+    initialize_database()
+
+    print("Database Status: READY")
     print("\nInitialization complete.")
 
 
@@ -69,6 +80,9 @@ def monitor_authentication():
     events, invalid_lines = read_log_file(AUTH_LOG_FILE)
 
     print(f"Successfully loaded {len(events)} authentication events.")
+
+    new_events = save_events(events, "authentication")
+    print(f"New authentication events stored: {new_events}")
 
     statistics = analyze_authentication_events(events)
     display_report(statistics, invalid_lines)
@@ -96,6 +110,9 @@ def monitor_network():
 
     print(f"Successfully loaded {len(events)} network events.")
     print(f"Invalid Network Entries: {invalid_lines}")
+
+    new_events = save_events(events, "network")
+    print(f"New network events stored: {new_events}")
 
     print("\nRunning network threat detection...")
 
@@ -143,13 +160,20 @@ def main():
     network_alerts = monitor_network()
 
     all_alerts = authentication_alerts + network_alerts
+    prioritized_alerts = score_alerts(all_alerts)
 
     display_risk_report(all_alerts)
+
+    new_alerts = save_alerts(prioritized_alerts)
+
+    print(f"\nNew security alerts stored: {new_alerts}")
 
     display_monitoring_summary(
         authentication_alerts,
         network_alerts,
     )
+
+    display_database_summary()
 
 
 if __name__ == "__main__":

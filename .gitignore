@@ -92,3 +92,9 @@ data/raw/
 # ------------------------------------------
 instance/
 .webassets-cache/
+
+# AllamSec SQLite database files
+database/*.db
+database/*.db-journal
+database/*.db-wal
+database/*.db-shm
