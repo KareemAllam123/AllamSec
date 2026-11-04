@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Threat Analytics | AllamSec{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">SECURITY INTELLIGENCE</div>
+        <h1>Threat Analytics</h1>
+        <p>Explore attack patterns, severity, and event activity.</p>
+    </div>
+
+    <button class="btn" id="refreshAnalytics">
+        ↻ Refresh Analytics
+    </button>
+</div>
+
+<div class="analytics-grid">
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Threat Severity Distribution</h2>
+                <p>Security alerts by severity level</p>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="severityChart"></canvas>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Attack Type Distribution</h2>
+                <p>Detected threats by classification</p>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="attackChart"></canvas>
+        </div>
+    </section>
+
+    <section class="panel analytics-wide">
+        <div class="panel-header">
+            <div>
+                <h2>Security Event Activity</h2>
+                <p>Events grouped by date, up to 14 recorded days</p>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="activityChart"></canvas>
+        </div>
+    </section>
+
+    <section class="panel analytics-wide">
+        <div class="panel-header">
+            <div>
+                <h2>Investigation Status</h2>
+                <p>Current progress of security investigations</p>
+            </div>
+        </div>
+
+        <div class="investigation-grid" id="investigationSummary">
+            <p>Loading investigation statistics...</p>
+        </div>
+    </section>
+</div>
+
+<p class="analytics-message" id="analyticsMessage"
+   role="status" aria-live="polite"></p>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+
+{% endblock %}

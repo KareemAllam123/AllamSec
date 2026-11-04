@@ -1,38 +1,49 @@
-"""Flask web dashboard for AllamSec."""
+"""AllamSec security monitoring web dashboard."""
 
 import json
 from contextlib import closing
-from pathlib import Path
 
-from flask import Flask, abort, jsonify, render_template, request
+from flask import (
+    Flask,
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from database.db_manager import (
+    ALERT_STATUSES,
     DEFAULT_DB_PATH,
     get_connection,
+    get_threat_analytics,
+    initialize_alert_management,
     initialize_database,
+    update_alert_investigation,
 )
 
 
-APP_VERSION = "0.7.0"
+APP_VERSION = "0.8.0"
 
 
 def create_app(db_path=None):
-    """Create and configure the AllamSec dashboard."""
-
     app = Flask(
-    __name__,
-    template_folder="templates",
-    static_folder="static",
-    static_url_path="/static",
-)
+        __name__,
+        template_folder="templates",
+        static_folder="static",
+        static_url_path="/static",
+    )
 
     app.config["DATABASE_PATH"] = str(
         db_path if db_path is not None else DEFAULT_DB_PATH
     )
 
     app.config["JSON_SORT_KEYS"] = False
+    app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
 
     initialize_database(app.config["DATABASE_PATH"])
+    initialize_alert_management(app.config["DATABASE_PATH"])
 
     def fetch_one(query, parameters=()):
         with closing(
@@ -41,7 +52,6 @@ def create_app(db_path=None):
             row = connection.execute(
                 query, parameters
             ).fetchone()
-
             return dict(row) if row else None
 
     def fetch_all(query, parameters=()):
@@ -51,12 +61,9 @@ def create_app(db_path=None):
             rows = connection.execute(
                 query, parameters
             ).fetchall()
-
             return [dict(row) for row in rows]
 
     def get_statistics():
-        """Collect the main security dashboard statistics."""
-
         totals = fetch_one("""
             SELECT
                 (SELECT COUNT(*) FROM security_events)
@@ -105,8 +112,6 @@ def create_app(db_path=None):
         return totals
 
     def parse_alert(row):
-        """Decode an alert's stored JSON data."""
-
         if row is None:
             return None
 
@@ -145,16 +150,12 @@ def create_app(db_path=None):
 
     @app.route("/")
     def index():
-        statistics = get_statistics()
-        alerts = get_alerts(limit=8)
-        events = get_events(limit=6)
-
         return render_template(
             "index.html",
             page="overview",
-            stats=statistics,
-            alerts=alerts,
-            events=events,
+            stats=get_statistics(),
+            alerts=get_alerts(limit=8),
+            events=get_events(limit=6),
         )
 
     @app.route("/alerts")
@@ -163,31 +164,73 @@ def create_app(db_path=None):
             "severity", "ALL"
         ).upper()
 
-        allowed = {
-            "ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"
-        }
+        status = request.args.get(
+            "status", "ALL"
+        ).upper()
 
-        if severity not in allowed:
+        search = request.args.get(
+            "search", ""
+        ).strip()[:100]
+
+        if severity not in (
+            "ALL", "CRITICAL", "HIGH", "MEDIUM", "LOW"
+        ):
             abort(400, description="Invalid severity filter.")
 
-        if severity == "ALL":
-            alerts = get_alerts(limit=500)
-        else:
-            rows = fetch_all("""
-                SELECT *
-                FROM security_alerts
-                WHERE severity = ?
-                ORDER BY risk_score DESC, id DESC
-                LIMIT 500
-            """, (severity,))
+        if status not in ("ALL", *ALERT_STATUSES):
+            abort(400, description="Invalid status filter.")
 
-            alerts = [parse_alert(row) for row in rows]
+        conditions = []
+        parameters = []
+
+        if severity != "ALL":
+            conditions.append("severity = ?")
+            parameters.append(severity)
+
+        if status != "ALL":
+            conditions.append("status = ?")
+            parameters.append(status)
+
+        if search:
+            conditions.append("""
+                (
+                    source_ip LIKE ? OR
+                    destination_ip LIKE ? OR
+                    username LIKE ? OR
+                    alert_type LIKE ?
+                )
+            """)
+
+            pattern = (
+                "%"
+                + search.replace("\\", "\\\\")
+                        .replace("%", "\\%")
+                        .replace("_", "\\_")
+                + "%"
+            )
+
+            conditions[-1] = conditions[-1].replace(
+                "LIKE ?", "LIKE ? ESCAPE '\\'"
+            )
+
+            parameters.extend([pattern] * 4)
+
+        query = "SELECT * FROM security_alerts"
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += " ORDER BY risk_score DESC, id DESC LIMIT 500"
+
+        rows = fetch_all(query, parameters)
 
         return render_template(
             "alerts.html",
             page="alerts",
-            alerts=alerts,
+            alerts=[parse_alert(row) for row in rows],
             selected_severity=severity,
+            selected_status=status,
+            search_query=search,
             stats=get_statistics(),
         )
 
@@ -206,6 +249,32 @@ def create_app(db_path=None):
             "alert_detail.html",
             page="alerts",
             alert=parse_alert(row),
+            allowed_statuses=ALERT_STATUSES,
+        )
+
+    @app.route("/alerts/<int:alert_id>/update", methods=["POST"])
+    def update_alert(alert_id):
+        status = request.form.get("status", "")
+        notes = request.form.get("notes", "")
+
+        if status not in ALERT_STATUSES:
+            abort(400, description="Invalid investigation status.")
+
+        if len(notes) > 5000:
+            abort(400, description="Notes are too long.")
+
+        updated = update_alert_investigation(
+            alert_id,
+            status,
+            notes,
+            db_path=app.config["DATABASE_PATH"],
+        )
+
+        if not updated:
+            abort(404)
+
+        return redirect(
+            url_for("alert_detail", alert_id=alert_id)
         )
 
     @app.route("/events")
@@ -231,9 +300,7 @@ def create_app(db_path=None):
             events = []
 
             for row in rows:
-                row["details"] = json.loads(
-                    row["event_data"]
-                )
+                row["details"] = json.loads(row["event_data"])
                 events.append(row)
 
         return render_template(
@@ -244,14 +311,28 @@ def create_app(db_path=None):
             stats=get_statistics(),
         )
 
+    @app.route("/analytics")
+    def analytics_page():
+        return render_template(
+            "analytics.html",
+            page="analytics",
+        )
+
     @app.route("/api/stats")
     def api_stats():
         return jsonify(get_statistics())
 
     @app.route("/api/alerts")
     def api_alerts():
-        alerts = get_alerts(limit=100)
-        return jsonify(alerts)
+        return jsonify(get_alerts(limit=100))
+
+    @app.route("/api/analytics")
+    def api_analytics():
+        return jsonify(
+            get_threat_analytics(
+                app.config["DATABASE_PATH"]
+            )
+        )
 
     @app.route("/health")
     def health():

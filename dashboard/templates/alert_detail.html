@@ -122,4 +122,85 @@
     <pre class="json-view">{{ alert.details | tojson(indent=2) }}</pre>
 </section>
 
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Alert Investigation</h2>
+            <p>Track your investigation progress and findings</p>
+        </div>
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('update_alert', alert_id=alert.id) }}"
+          class="investigation-form">
+
+        <label for="status">Investigation Status</label>
+
+        <select name="status" id="status" required>
+            {% for status in allowed_statuses %}
+            <option value="{{ status }}"
+                {% if alert.status == status %}selected{% endif %}>
+                {{ status.replace('_', ' ') }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label for="notes">Investigation Notes</label>
+
+        <textarea
+            name="notes"
+            id="notes"
+            rows="6"
+            maxlength="5000"
+            placeholder="Record investigation findings, evidence, and actions taken..."
+        >{{ alert.investigation_notes or '' }}</textarea>
+
+        <button type="submit" class="btn">
+            Save Investigation
+        </button>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Alert Investigation</h2>
+            <p>Track investigation progress and findings</p>
+        </div>
+    </div>
+
+    <form
+        method="POST"
+        action="{{ url_for('update_alert', alert_id=alert.id) }}"
+        class="investigation-form"
+    >
+        <label for="status">Investigation Status</label>
+
+        <select name="status" id="status" required>
+            {% for status in allowed_statuses %}
+            <option
+                value="{{ status }}"
+                {% if alert.status == status %}selected{% endif %}
+            >
+                {{ status.replace('_', ' ') }}
+            </option>
+            {% endfor %}
+        </select>
+
+        <label for="notes">Investigation Notes</label>
+
+        <textarea
+            name="notes"
+            id="notes"
+            rows="6"
+            maxlength="5000"
+            placeholder="Record investigation findings..."
+        >{{ alert.investigation_notes or '' }}</textarea>
+
+        <button type="submit" class="btn">
+            Save Investigation
+        </button>
+    </form>
+</section>
+
 {% endblock %}

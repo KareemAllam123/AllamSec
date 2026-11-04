@@ -24,26 +24,43 @@
             <p>Sorted by highest risk score</p>
         </div>
 
-        <form method="get" class="filter-form">
-            <label for="severity">Severity</label>
+        <form method="get" class="filter-form advanced-filters">
 
-            <select name="severity"
-                    id="severity"
-                    onchange="this.form.submit()">
+    <input
+        type="search"
+        name="search"
+        value="{{ search_query }}"
+        placeholder="Search IP, account, or attack type..."
+        aria-label="Search alerts"
+    >
 
-                {% for option in ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] %}
-                    <option value="{{ option }}"
-                        {% if selected_severity == option %}selected{% endif %}>
-                        {{ option }}
-                    </option>
-                {% endfor %}
+    <select name="severity" aria-label="Severity">
+        {% for option in ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] %}
+        <option value="{{ option }}"
+            {% if selected_severity == option %}selected{% endif %}>
+            {{ option if option != 'ALL' else 'All Severities' }}
+        </option>
+        {% endfor %}
+    </select>
 
-            </select>
+    <select name="status" aria-label="Investigation status">
+        {% for option in ['ALL', 'OPEN', 'INVESTIGATING', 'RESOLVED', 'FALSE_POSITIVE'] %}
+        <option value="{{ option }}"
+            {% if selected_status == option %}selected{% endif %}>
+            {{ option.replace('_', ' ') if option != 'ALL' else 'All Statuses' }}
+        </option>
+        {% endfor %}
+    </select>
 
-            <noscript>
-                <button type="submit" class="btn">Filter</button>
-            </noscript>
-        </form>
+    <button type="submit" class="btn">
+        Apply Filters
+    </button>
+
+    <a href="{{ url_for('alerts_page') }}" class="text-link">
+        Clear
+    </a>
+
+</form>
     </div>
 
     <div class="table-scroll">
@@ -53,6 +70,7 @@
                     <th>ID</th>
                     <th>ALERT TYPE</th>
                     <th>SEVERITY</th>
+                    <th>STATUS</th>
                     <th>SOURCE IP</th>
                     <th>TARGET</th>
                     <th>RISK</th>
@@ -74,6 +92,12 @@
                             {{ alert.severity }}
                         </span>
                     </td>
+
+                    <td>
+    <span class="status-badge">
+        {{ alert.status.replace('_', ' ') }}
+    </span>
+</td>
 
                     <td class="mono">
                         {{ alert.source_ip or 'N/A' }}
@@ -97,7 +121,7 @@
 
                 {% else %}
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="8" class="empty-state">
                         No alerts match this filter.
                     </td>
                 </tr>

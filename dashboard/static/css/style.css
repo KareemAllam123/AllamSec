@@ -737,3 +737,161 @@ tbody tr:last-child td {
 .severity-progress.low::-moz-progress-bar {
     background: var(--green);
 }
+
+/* =========================================================
+   AllamSec Phase 8 — Threat Analytics & Alert Management
+   ========================================================= */
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.analytics-wide {
+    grid-column: 1 / -1;
+}
+
+.chart-container {
+    position: relative;
+    height: 290px;
+    width: 100%;
+}
+
+.analytics-wide .chart-container {
+    height: 340px;
+}
+
+.analytics-message {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.investigation-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.investigation-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #0d1727;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.investigation-card span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.investigation-card strong {
+    font-size: 30px;
+    color: var(--text);
+}
+
+.investigation-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 750px;
+}
+
+.investigation-form label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.investigation-form select,
+.investigation-form textarea,
+.advanced-filters input,
+.advanced-filters select {
+    background: #0d1727;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 13px;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.investigation-form textarea {
+    resize: vertical;
+    min-height: 130px;
+    line-height: 1.6;
+}
+
+.investigation-form .btn {
+    align-self: flex-start;
+    margin-top: 8px;
+}
+
+.advanced-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.advanced-filters input {
+    min-width: 230px;
+    flex: 1;
+}
+
+.advanced-filters select {
+    max-width: 175px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 5px 9px;
+    background: #15334b;
+    border: 1px solid #22516f;
+    color: #7dd3fc;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+    .investigation-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 720px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .analytics-wide {
+        grid-column: auto;
+    }
+
+    .investigation-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .advanced-filters {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .advanced-filters input,
+    .advanced-filters select {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+    }
+
+    .chart-container {
+        height: 260px;
+    }
+}

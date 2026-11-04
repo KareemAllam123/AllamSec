@@ -47,13 +47,14 @@ def create_hash(data):
 
 
 def get_connection(db_path=DEFAULT_DB_PATH):
-    """Open a connection to the SQLite database."""
+    """Create a SQLite connection that closes after use."""
 
     db_path = Path(db_path)
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
     connection = sqlite3.connect(db_path)
     connection.row_factory = sqlite3.Row
+
     connection.execute("PRAGMA busy_timeout = 5000")
 
     return connection
@@ -366,3 +367,161 @@ def display_database_summary(db_path=DEFAULT_DB_PATH):
     print(f"Highest Stored Risk:    {highest_display}")
 
     print("=" * 60)
+
+    # ------------------------------------------------------------
+# Phase 8: Alert investigation management
+# ------------------------------------------------------------
+
+ALERT_STATUSES = (
+    "OPEN",
+    "INVESTIGATING",
+    "RESOLVED",
+    "FALSE_POSITIVE",
+)
+
+
+def initialize_alert_management(db_path=DEFAULT_DB_PATH):
+    """Add investigation fields to existing alert records."""
+
+    with database_connection(db_path) as connection:
+        columns = {
+            row["name"]
+            for row in connection.execute(
+                "PRAGMA table_info(security_alerts)"
+            ).fetchall()
+        }
+
+        if "status" not in columns:
+            connection.execute(
+                "ALTER TABLE security_alerts "
+                "ADD COLUMN status TEXT NOT NULL DEFAULT 'OPEN'"
+            )
+
+        if "investigation_notes" not in columns:
+            connection.execute(
+                "ALTER TABLE security_alerts "
+                "ADD COLUMN investigation_notes TEXT NOT NULL DEFAULT ''"
+            )
+
+        if "updated_at" not in columns:
+            connection.execute(
+                "ALTER TABLE security_alerts "
+                "ADD COLUMN updated_at TEXT"
+            )
+
+        connection.execute("""
+            CREATE INDEX IF NOT EXISTS idx_alert_status
+            ON security_alerts(status)
+        """)
+
+
+def update_alert_investigation(
+    alert_id,
+    status,
+    notes="",
+    db_path=DEFAULT_DB_PATH,
+):
+    """Update an alert's investigation status and notes."""
+
+    if status not in ALERT_STATUSES:
+        raise ValueError("Invalid investigation status.")
+
+    if not isinstance(notes, str):
+        raise ValueError("Investigation notes must be text.")
+
+    if len(notes) > 5000:
+        raise ValueError(
+            "Investigation notes cannot exceed 5000 characters."
+        )
+
+    initialize_alert_management(db_path)
+
+    with database_connection(db_path) as connection:
+        cursor = connection.execute("""
+            UPDATE security_alerts
+            SET status = ?,
+                investigation_notes = ?,
+                updated_at = ?
+            WHERE id = ?
+        """, (
+            status,
+            notes,
+            datetime.now().isoformat(timespec="seconds"),
+            alert_id,
+        ))
+
+        return cursor.rowcount > 0
+
+
+def get_alert_management_summary(db_path=DEFAULT_DB_PATH):
+    """Return alert counts grouped by investigation status."""
+
+    initialize_alert_management(db_path)
+
+    summary = {status: 0 for status in ALERT_STATUSES}
+
+    with database_connection(db_path) as connection:
+        rows = connection.execute("""
+            SELECT status, COUNT(*) AS total
+            FROM security_alerts
+            GROUP BY status
+        """).fetchall()
+
+    for row in rows:
+        summary[row["status"]] = row["total"]
+
+    return summary
+
+
+def get_threat_analytics(db_path=DEFAULT_DB_PATH):
+    """Return aggregated data for dashboard charts."""
+
+    initialize_alert_management(db_path)
+
+    with database_connection(db_path) as connection:
+        severity_rows = connection.execute("""
+            SELECT severity, COUNT(*) AS total
+            FROM security_alerts
+            GROUP BY severity
+        """).fetchall()
+
+        type_rows = connection.execute("""
+            SELECT alert_type, COUNT(*) AS total
+            FROM security_alerts
+            GROUP BY alert_type
+            ORDER BY total DESC, alert_type
+        """).fetchall()
+
+        activity_rows = connection.execute("""
+            SELECT SUBSTR(event_timestamp, 1, 10) AS day,
+                   COUNT(*) AS total
+            FROM security_events
+            WHERE event_timestamp IS NOT NULL
+            GROUP BY SUBSTR(event_timestamp, 1, 10)
+            ORDER BY day DESC
+            LIMIT 14
+        """).fetchall()
+
+    severity = {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0,
+    }
+
+    for row in severity_rows:
+        if row["severity"] in severity:
+            severity[row["severity"]] = row["total"]
+
+    return {
+        "severity": severity,
+        "attack_types": [
+            dict(row) for row in type_rows
+        ],
+        "event_activity": [
+            dict(row) for row in reversed(activity_rows)
+        ],
+        "investigation_status": get_alert_management_summary(
+            db_path
+        ),
+    }
