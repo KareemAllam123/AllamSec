@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Security Alerts | AllamSec{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">THREAT DETECTION</div>
+        <h1>Security Alerts</h1>
+        <p>Investigate and prioritize detected security threats.</p>
+    </div>
+
+    <span class="count-badge">
+        {{ stats.total_alerts }} Total Alerts
+    </span>
+</div>
+
+<section class="panel">
+
+    <div class="panel-header">
+        <div>
+            <h2>Alert Inventory</h2>
+            <p>Sorted by highest risk score</p>
+        </div>
+
+        <form method="get" class="filter-form">
+            <label for="severity">Severity</label>
+
+            <select name="severity"
+                    id="severity"
+                    onchange="this.form.submit()">
+
+                {% for option in ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] %}
+                    <option value="{{ option }}"
+                        {% if selected_severity == option %}selected{% endif %}>
+                        {{ option }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+            <noscript>
+                <button type="submit" class="btn">Filter</button>
+            </noscript>
+        </form>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ALERT TYPE</th>
+                    <th>SEVERITY</th>
+                    <th>SOURCE IP</th>
+                    <th>TARGET</th>
+                    <th>RISK</th>
+                    <th>ACTION</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for alert in alerts %}
+                <tr>
+                    <td class="mono">#{{ alert.id }}</td>
+
+                    <td class="strong-cell">
+                        {{ alert.alert_type.replace('_', ' ') }}
+                    </td>
+
+                    <td>
+                        <span class="severity-badge {{ alert.severity | lower }}">
+                            {{ alert.severity }}
+                        </span>
+                    </td>
+
+                    <td class="mono">
+                        {{ alert.source_ip or 'N/A' }}
+                    </td>
+
+                    <td class="mono">
+                        {{ alert.destination_ip or alert.username or 'N/A' }}
+                    </td>
+
+                    <td>
+                        <strong>{{ alert.risk_score }}/100</strong>
+                    </td>
+
+                    <td>
+                        <a href="{{ url_for('alert_detail', alert_id=alert.id) }}"
+                           class="text-link">
+                            Inspect →
+                        </a>
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        No alerts match this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

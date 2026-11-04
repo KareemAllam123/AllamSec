@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Alert #{{ alert.id }} | AllamSec{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <a href="{{ url_for('alerts_page') }}" class="text-link">
+            ← Back to Alerts
+        </a>
+
+        <div class="eyebrow detail-eyebrow">
+            SECURITY INVESTIGATION
+        </div>
+
+        <h1>Alert #{{ alert.id }}</h1>
+
+        <p>{{ alert.alert_type.replace('_', ' ') }}</p>
+    </div>
+
+    <span class="severity-badge {{ alert.severity | lower }}">
+        {{ alert.severity }}
+    </span>
+</div>
+
+<div class="metrics-grid detail-metrics">
+
+    <div class="metric-card">
+        <div class="metric-label">RISK SCORE</div>
+        <div class="metric-value">
+            {{ alert.risk_score }}
+            <span class="metric-unit">/100</span>
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">SEVERITY</div>
+        <div class="metric-value small-value">
+            {{ alert.severity }}
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">SOURCE IP</div>
+        <div class="metric-value small-value mono">
+            {{ alert.source_ip or 'N/A' }}
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">ALERT ID</div>
+        <div class="metric-value">
+            #{{ alert.id }}
+        </div>
+    </div>
+
+</div>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Threat Description</h2>
+            <p>Detection engine findings</p>
+        </div>
+    </div>
+
+    <p class="description-text">
+        {{ alert.description or 'No description available.' }}
+    </p>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Investigation Details</h2>
+            <p>Information associated with this alert</p>
+        </div>
+    </div>
+
+    <div class="details-grid">
+        <div class="detail-field">
+            <span>Alert Type</span>
+            <strong>{{ alert.alert_type }}</strong>
+        </div>
+
+        <div class="detail-field">
+            <span>Source IP</span>
+            <strong>{{ alert.source_ip or 'N/A' }}</strong>
+        </div>
+
+        <div class="detail-field">
+            <span>Destination IP</span>
+            <strong>{{ alert.destination_ip or 'N/A' }}</strong>
+        </div>
+
+        <div class="detail-field">
+            <span>Target Account</span>
+            <strong>{{ alert.username or 'N/A' }}</strong>
+        </div>
+
+        <div class="detail-field">
+            <span>First Attempt</span>
+            <strong>{{ alert.first_attempt or 'N/A' }}</strong>
+        </div>
+
+        <div class="detail-field">
+            <span>Last Attempt</span>
+            <strong>{{ alert.last_attempt or 'N/A' }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Raw Detection Data</h2>
+            <p>Original stored alert fields</p>
+        </div>
+    </div>
+
+    <pre class="json-view">{{ alert.details | tojson(indent=2) }}</pre>
+</section>
+
+{% endblock %}

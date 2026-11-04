@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Overview | AllamSec{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">SECURITY OPERATIONS CENTER</div>
+        <h1>Security Overview</h1>
+        <p>Monitor detected threats and security activity.</p>
+    </div>
+
+    <a href="{{ url_for('index') }}" class="btn">
+        ↻ Refresh Data
+    </a>
+</div>
+
+<div class="metrics-grid">
+
+    <div class="metric-card">
+        <div class="metric-label">TOTAL EVENTS</div>
+        <div class="metric-value">
+            {{ stats.total_events }}
+        </div>
+        <div class="metric-footer">
+            Authentication and network activity
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">SECURITY ALERTS</div>
+        <div class="metric-value">
+            {{ stats.total_alerts }}
+        </div>
+        <div class="metric-footer">
+            Detected security threats
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">CRITICAL THREATS</div>
+        <div class="metric-value critical-text">
+            {{ stats.critical_alerts }}
+        </div>
+        <div class="metric-footer">
+            Highest-priority alerts
+        </div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-label">HIGHEST RISK SCORE</div>
+        <div class="metric-value">
+            {{ stats.highest_risk_score }}
+            <span class="metric-unit">/ 100</span>
+        </div>
+        <div class="metric-footer">
+            Maximum recorded threat score
+        </div>
+    </div>
+
+</div>
+
+<div class="content-grid">
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Threat Severity</h2>
+                <p>Breakdown of detected alerts</p>
+            </div>
+        </div>
+
+        {% set total = stats.total_alerts %}
+
+        {% for severity in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] %}
+            {% set count = stats.severity_counts[severity] %}
+
+            <div class="severity-item">
+                <div class="severity-top">
+                    <span class="severity-name">
+                        {{ severity }}
+                    </span>
+                    <strong>{{ count }}</strong>
+                </div>
+
+                <div class="progress-track">
+                    <progress
+                        class="severity-progress {{ severity | lower }}"
+                        value="{{ count }}"
+                        max="{{ total if total > 0 else 1 }}"
+                        aria-label="{{ severity }} alerts">
+                    </progress>
+                </div>
+            </div>
+        {% endfor %}
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2>Event Sources</h2>
+                <p>Stored activity by log type</p>
+            </div>
+        </div>
+
+        <div class="source-row">
+            <div>
+                <span class="source-icon">A</span>
+                Authentication Logs
+            </div>
+            <strong>{{ stats.authentication_events }}</strong>
+        </div>
+
+        <div class="source-row">
+            <div>
+                <span class="source-icon">N</span>
+                Network Logs
+            </div>
+            <strong>{{ stats.network_events }}</strong>
+        </div>
+
+        <div class="source-note">
+            Data is retrieved from the AllamSec SQLite database.
+        </div>
+    </section>
+
+</div>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Priority Security Alerts</h2>
+            <p>Highest-risk threats detected by AllamSec</p>
+        </div>
+
+        <a href="{{ url_for('alerts_page') }}"
+           class="text-link">
+            View All Alerts →
+        </a>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>THREAT TYPE</th>
+                    <th>SEVERITY</th>
+                    <th>SOURCE IP</th>
+                    <th>RISK SCORE</th>
+                    <th>DETAILS</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for alert in alerts %}
+                <tr>
+                    <td class="strong-cell">
+                        {{ alert.alert_type.replace('_', ' ') }}
+                    </td>
+
+                    <td>
+                        <span class="severity-badge {{ alert.severity | lower }}">
+                            {{ alert.severity }}
+                        </span>
+                    </td>
+
+                    <td class="mono">
+                        {{ alert.source_ip or 'N/A' }}
+                    </td>
+
+                    <td>
+                        <strong>{{ alert.risk_score }}/100</strong>
+                    </td>
+
+                    <td>
+                        <a href="{{ url_for('alert_detail', alert_id=alert.id) }}"
+                           class="text-link">
+                            Inspect →
+                        </a>
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        No security alerts have been stored.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Recent Security Events</h2>
+            <p>Latest recorded authentication and network activity</p>
+        </div>
+
+        <a href="{{ url_for('events_page') }}"
+           class="text-link">
+            View All Events →
+        </a>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>TIMESTAMP</th>
+                    <th>SOURCE</th>
+                    <th>EVENT TYPE</th>
+                    <th>IP ADDRESS</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td class="mono">
+                        {{ event.event_timestamp }}
+                    </td>
+
+                    <td>
+                        {{ event.event_source | capitalize }}
+                    </td>
+
+                    <td class="strong-cell">
+                        {{ event.event_type }}
+                    </td>
+
+                    <td class="mono">
+                        {{ event.source_ip or 'N/A' }}
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="4" class="empty-state">
+                        No security events found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

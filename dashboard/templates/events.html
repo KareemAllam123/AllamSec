@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Security Events | AllamSec{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">LOG MONITORING</div>
+        <h1>Security Events</h1>
+        <p>Explore stored authentication and network logs.</p>
+    </div>
+
+    <span class="count-badge">
+        {{ stats.total_events }} Total Events
+    </span>
+</div>
+
+<section class="panel">
+
+    <div class="panel-header">
+        <div>
+            <h2>Event Log</h2>
+            <p>Most recent events first</p>
+        </div>
+
+        <form method="get" class="filter-form">
+            <label for="source">Log Source</label>
+
+            <select name="source"
+                    id="source"
+                    onchange="this.form.submit()">
+
+                <option value="all"
+                    {% if selected_source == 'all' %}selected{% endif %}>
+                    All Sources
+                </option>
+
+                <option value="authentication"
+                    {% if selected_source == 'authentication' %}selected{% endif %}>
+                    Authentication
+                </option>
+
+                <option value="network"
+                    {% if selected_source == 'network' %}selected{% endif %}>
+                    Network
+                </option>
+            </select>
+
+            <noscript>
+                <button type="submit" class="btn">Filter</button>
+            </noscript>
+        </form>
+    </div>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>TIMESTAMP</th>
+                    <th>SOURCE</th>
+                    <th>EVENT TYPE</th>
+                    <th>SOURCE IP</th>
+                    <th>DESTINATION / ACCOUNT</th>
+                    <th>PORT</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for event in events %}
+                <tr>
+                    <td class="mono">
+                        #{{ event.id }}
+                    </td>
+
+                    <td class="mono">
+                        {{ event.event_timestamp }}
+                    </td>
+
+                    <td>
+                        {{ event.event_source | capitalize }}
+                    </td>
+
+                    <td class="strong-cell">
+                        {{ event.event_type }}
+                    </td>
+
+                    <td class="mono">
+                        {{ event.source_ip or 'N/A' }}
+                    </td>
+
+                    <td class="mono">
+                        {{ event.destination_ip or event.username or 'N/A' }}
+                    </td>
+
+                    <td class="mono">
+                        {{ event.destination_port if event.destination_port is not none else '-' }}
+                    </td>
+                </tr>
+
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        No security events match this filter.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}
