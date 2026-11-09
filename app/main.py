@@ -44,7 +44,7 @@ PORT_SCAN_THRESHOLD = 10
 DETECTION_WINDOW_SECONDS = 60
 
 APP_NAME = "AllamSec"
-APP_VERSION = "0.8.0"
+APP_VERSION = "0.9.0"
 
 def display_banner():
     print("=" * 55)

@@ -1,0 +1,99 @@
+
+{% extends "base.html" %}
+
+{% block title %}Windows Security Events | AllamSec{% endblock %}
+
+{% block content %}
+
+<div class="page-heading">
+    <div>
+        <div class="eyebrow">OPERATING SYSTEM MONITORING</div>
+        <h1>Windows Security Events</h1>
+        <p>Investigate real authentication activity collected from Windows.</p>
+    </div>
+    <button class="btn" id="refreshWindowsEvents">
+        ↻ Refresh Events
+    </button>
+</div>
+
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2>Authentication Event Inventory</h2>
+            <p>Up to 500 matching Windows Security events</p>
+        </div>
+    </div>
+
+    <div class="advanced-filters windows-filters">
+        <input
+            id="windowsSearch"
+            type="search"
+            placeholder="Search username, IP, computer..."
+            aria-label="Search Windows events"
+        >
+
+        <select id="windowsEventType" aria-label="Event type">
+            <option value="ALL">All Event Types</option>
+            <option value="SUCCESS_LOGIN">Successful Logins</option>
+            <option value="FAILED_LOGIN">Failed Logins</option>
+        </select>
+
+        <select id="windowsLogonType" aria-label="Logon type">
+            <option value="ALL">All Logon Types</option>
+            <option value="SERVICE">Service</option>
+            <option value="INTERACTIVE">Interactive</option>
+            <option value="UNLOCK">Unlock</option>
+            <option value="CACHED_INTERACTIVE">Cached Interactive</option>
+            <option value="NETWORK">Network</option>
+            <option value="REMOTE_INTERACTIVE">Remote Interactive</option>
+        </select>
+
+        <button class="btn" id="applyWindowsFilters">
+            Apply Filters
+        </button>
+
+        <button class="btn" id="clearWindowsFilters">
+            Clear
+        </button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>TIME (UTC)</th>
+                    <th>EVENT ID</th>
+                    <th>RESULT</th>
+                    <th>LOGON TYPE</th>
+                    <th>USERNAME</th>
+                    <th>SOURCE IP</th>
+                    <th>COMPUTER</th>
+                    <th>DETAILS</th>
+                </tr>
+            </thead>
+            <tbody id="windowsEventsBody">
+                <tr>
+                    <td colspan="8">Loading Windows events...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="analytics-message" id="windowsEventsMessage"
+       role="status" aria-live="polite"></p>
+</section>
+
+<section class="panel windows-detail-panel" id="windowsDetailsPanel"
+         hidden>
+    <div class="panel-header">
+        <div>
+            <h2>Event Details</h2>
+            <p>Windows authentication metadata</p>
+        </div>
+    </div>
+    <pre id="windowsEventDetails"></pre>
+</section>
+
+<script src="{{ url_for('static', filename='js/windows_events.js') }}"></script>
+
+{% endblock %}

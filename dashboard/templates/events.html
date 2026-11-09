@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block title %}Security Events | AllamSec{% endblock %}
@@ -25,6 +26,7 @@
         </div>
 
         <form method="get" class="filter-form">
+
             <label for="source">Log Source</label>
 
             <select name="source"
@@ -47,9 +49,37 @@
                 </option>
             </select>
 
+            <label for="platform">Platform</label>
+
+            <select name="platform"
+                    id="platform"
+                    onchange="this.form.submit()">
+
+                <option value="all"
+                    {% if selected_platform == 'all' %}selected{% endif %}>
+                    All Platforms
+                </option>
+
+                <option value="windows"
+                    {% if selected_platform == 'windows' %}selected{% endif %}>
+                    Windows Security
+                </option>
+
+                <option value="linux"
+                    {% if selected_platform == 'linux' %}selected{% endif %}>
+                    Linux SSH
+                </option>
+
+                <option value="other"
+                    {% if selected_platform == 'other' %}selected{% endif %}>
+                    Other Authentication
+                </option>
+            </select>
+
             <noscript>
                 <button type="submit" class="btn">Filter</button>
             </noscript>
+
         </form>
     </div>
 
@@ -60,6 +90,7 @@
                     <th>ID</th>
                     <th>TIMESTAMP</th>
                     <th>SOURCE</th>
+                    <th>PLATFORM</th>
                     <th>EVENT TYPE</th>
                     <th>SOURCE IP</th>
                     <th>DESTINATION / ACCOUNT</th>
@@ -82,6 +113,10 @@
                         {{ event.event_source | capitalize }}
                     </td>
 
+                    <td>
+                        {{ event.platform_name }}
+                    </td>
+
                     <td class="strong-cell">
                         {{ event.event_type }}
                     </td>
@@ -101,7 +136,7 @@
 
                 {% else %}
                 <tr>
-                    <td colspan="7" class="empty-state">
+                    <td colspan="8" class="empty-state">
                         No security events match this filter.
                     </td>
                 </tr>
@@ -109,6 +144,7 @@
             </tbody>
         </table>
     </div>
+
 </section>
 
 {% endblock %}

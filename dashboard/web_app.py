@@ -24,7 +24,7 @@ from database.db_manager import (
 )
 
 
-APP_VERSION = "0.8.0"
+APP_VERSION = "0.9.0"
 
 
 def create_app(db_path=None):
@@ -38,6 +38,124 @@ def create_app(db_path=None):
     app.config["DATABASE_PATH"] = str(
         db_path if db_path is not None else DEFAULT_DB_PATH
     )
+
+    
+    @app.get("/api/windows-events")
+    def api_windows_events():
+        """Return recent Windows authentication events."""
+
+        from contextlib import closing
+        import json
+
+        from flask import jsonify, request
+        from database.db_manager import get_connection
+
+        allowed_types = {
+            "ALL", "SUCCESS_LOGIN", "FAILED_LOGIN"
+        }
+
+        event_type = request.args.get(
+            "type", "ALL"
+        ).upper()
+
+        logon_type = request.args.get(
+            "logon_type", "ALL"
+        ).upper()
+
+        search = request.args.get(
+            "search", ""
+        ).strip()[:100]
+
+        if event_type not in allowed_types:
+            return jsonify({
+                "error": "Invalid event type."
+            }), 400
+
+        query = """
+            SELECT id, event_source, event_type,
+                   event_timestamp, source_ip,
+                   username, event_data
+            FROM security_events
+            WHERE event_source = 'authentication'
+            ORDER BY event_timestamp DESC, id DESC
+            LIMIT 5000
+        """
+
+        with closing(get_connection(db_path or DEFAULT_DB_PATH)) as connection:
+            rows = connection.execute(query).fetchall()
+
+        results = []
+
+        for row in rows:
+            try:
+                metadata = json.loads(
+                    row["event_data"] or "{}"
+                )
+            except (ValueError, TypeError):
+                metadata = {}
+
+            if metadata.get("event_origin") != "windows_security":
+                continue
+
+            if (
+                event_type != "ALL"
+                and row["event_type"] != event_type
+            ):
+                continue
+
+            if (
+                logon_type != "ALL"
+                and metadata.get(
+                    "logon_type_name", ""
+                ).upper() != logon_type
+            ):
+                continue
+
+            username = row["username"] or ""
+            source_ip = row["source_ip"] or ""
+
+            searchable = " ".join([
+                username,
+                source_ip,
+                str(metadata.get("computer", "")),
+                str(metadata.get("windows_event_id", "")),
+            ]).lower()
+
+            if search and search.lower() not in searchable:
+                continue
+
+            results.append({
+                "id": row["id"],
+                "timestamp": row["event_timestamp"],
+                "event_type": row["event_type"],
+                "username": username,
+                "source_ip": source_ip,
+                "windows_event_id": metadata.get(
+                    "windows_event_id"
+                ),
+                "logon_type": metadata.get(
+                    "logon_type"
+                ),
+                "logon_type_name": metadata.get(
+                    "logon_type_name", "UNKNOWN"
+                ),
+                "computer": metadata.get("computer"),
+                "windows_record_id": metadata.get(
+                    "windows_record_id"
+                ),
+                "is_remote_authentication": metadata.get(
+                    "is_remote_authentication", False
+                ),
+            })
+
+            if len(results) >= 500:
+                break
+
+        return jsonify({
+            "total": len(results),
+            "events": results,
+        })
+
 
     app.config["JSON_SORT_KEYS"] = False
     app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024
@@ -277,39 +395,106 @@ def create_app(db_path=None):
             url_for("alert_detail", alert_id=alert_id)
         )
 
+    
     @app.route("/events")
     def events_page():
         source = request.args.get(
             "source", "all"
         ).lower()
 
-        if source not in ("all", "authentication", "network"):
+        platform = request.args.get(
+            "platform", "all"
+        ).lower()
+
+        allowed_sources = {
+            "all", "authentication", "network"
+        }
+
+        allowed_platforms = {
+            "all",
+            "windows",
+            "linux",
+            "other",
+        }
+
+        if source not in allowed_sources:
             abort(400, description="Invalid event source.")
 
-        if source == "all":
-            events = get_events(limit=500)
-        else:
-            rows = fetch_all("""
-                SELECT *
-                FROM security_events
-                WHERE event_source = ?
-                ORDER BY event_timestamp DESC, id DESC
-                LIMIT 500
-            """, (source,))
+        if platform not in allowed_platforms:
+            abort(400, description="Invalid platform filter.")
 
-            events = []
+        conditions = []
+        parameters = []
 
-            for row in rows:
-                row["details"] = json.loads(row["event_data"])
-                events.append(row)
+        if source != "all":
+            conditions.append("event_source = ?")
+            parameters.append(source)
+
+        if platform != "all":
+            # Platform filters apply only to authentication logs.
+            conditions.append("event_source = 'authentication'")
+
+            if platform == "windows":
+                conditions.append(
+                    "json_extract(event_data, '$.event_origin') "
+                    "= 'windows_security'"
+                )
+
+            elif platform == "linux":
+                conditions.append(
+                    "json_extract(event_data, '$.event_origin') "
+                    "= 'linux_ssh'"
+                )
+
+            elif platform == "other":
+                conditions.append(
+                    "("
+                    "json_extract(event_data, '$.event_origin') IS NULL "
+                    "OR json_extract(event_data, '$.event_origin') "
+                    "NOT IN ('windows_security', 'linux_ssh')"
+                    ")"
+                )
+
+        query = "SELECT * FROM security_events"
+
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+
+        query += (
+            " ORDER BY event_timestamp DESC, id DESC "
+            "LIMIT 500"
+        )
+
+        events = fetch_all(query, tuple(parameters))
+
+        for event in events:
+            try:
+                event["details"] = json.loads(
+                    event["event_data"] or "{}"
+                )
+            except (ValueError, TypeError):
+                event["details"] = {}
+
+            origin = event["details"].get("event_origin")
+
+            if origin == "windows_security":
+                event["platform_name"] = "Windows"
+            elif origin == "linux_ssh":
+                event["platform_name"] = "Linux SSH"
+            elif event["event_source"] == "network":
+                event["platform_name"] = "Network"
+            else:
+                event["platform_name"] = "Other"
 
         return render_template(
             "events.html",
             page="events",
             events=events,
             selected_source=source,
+            selected_platform=platform,
             stats=get_statistics(),
         )
+
 
     @app.route("/analytics")
     def analytics_page():
@@ -341,6 +526,14 @@ def create_app(db_path=None):
             "version": APP_VERSION,
             "status": "online",
         })
+    
+    @app.get("/windows-events")
+    def windows_events_page():
+        return render_template(
+            "windows_events.html",
+            page="windows_events",
+            app_version=APP_VERSION,
+        )
 
     return app
 
