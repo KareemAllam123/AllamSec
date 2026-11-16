@@ -60,6 +60,14 @@
                     <span class="nav-icon">◉</span>
                     Threat Analytics
                 </a>
+                <div class="notification-nav-section">
+                <a href="{{ url_for('notifications_page') }}"
+        class="notification-nav-link {% if request.endpoint == 'notifications_page' %}active{% endif %}"
+            >
+        <span class="notification-nav-icon">🔔</span>
+        <span>Notifications</span>
+    </a>
+</div>
 
             </nav>
 

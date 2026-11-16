@@ -4,11 +4,15 @@
 import argparse
 
 from app.linux_event_collector import read_linux_auth_file
+from app.alert_dispatcher import dispatch_alerts
+
 from database.db_manager import (
+    DEFAULT_DB_PATH,
     initialize_database,
     save_events,
     save_alerts,
 )
+
 from detection.brute_force import detect_brute_force
 from detection.risk_scoring import score_alerts
 
@@ -39,25 +43,34 @@ def ingest_linux_file(file_path, year=None, db_path=None):
 
     scored_alerts = score_alerts(alerts)
 
-    # Use the existing AllamSec database functions.
-    if db_path is None:
-        initialize_database()
-        saved_events = save_events(
-            events,
-            event_source="authentication",
-        )
-        saved_alerts = save_alerts(scored_alerts)
-    else:
-        initialize_database(db_path=db_path)
-        saved_events = save_events(
-            events,
-            event_source="authentication",
-            db_path=db_path,
-        )
-        saved_alerts = save_alerts(
-            scored_alerts,
-            db_path=db_path,
-        )
+    # Resolve the database path once so every operation
+    # uses the same database.
+    active_db_path = (
+        db_path if db_path is not None
+        else DEFAULT_DB_PATH
+    )
+
+    initialize_database(db_path=active_db_path)
+
+    saved_events = save_events(
+        events,
+        event_source="authentication",
+        db_path=active_db_path,
+    )
+
+    saved_alerts = save_alerts(
+        scored_alerts,
+        db_path=active_db_path,
+    )
+
+    # This must run after saving alerts and outside
+    # any conditional branch.
+    notification_results = dispatch_alerts(
+        scored_alerts,
+        db_path=active_db_path,
+        minimum_severity="HIGH",
+        email_enabled=False,
+    )
 
     return {
         "collected_events": len(events),
@@ -67,6 +80,9 @@ def ingest_linux_file(file_path, year=None, db_path=None):
         "detected_alerts": len(scored_alerts),
         "saved_events": saved_events,
         "saved_alerts": saved_alerts,
+        "notification_previews": notification_results["previewed"],
+        "notifications_sent": notification_results["sent"],
+        "notification_failures": notification_results["failed"],
     }
 
 
@@ -105,6 +121,18 @@ def main():
     print("New database events:", results["saved_events"])
     print("Detected alerts:", results["detected_alerts"])
     print("New database alerts:", results["saved_alerts"])
+    print(
+        "Notification previews:",
+        results["notification_previews"],
+    )
+    print(
+        "Emails sent:",
+        results["notifications_sent"],
+    )
+    print(
+        "Notification failures:",
+        results["notification_failures"],
+    )
     print("=" * 55)
     print("Linux ingestion complete.")
     print("=" * 55)

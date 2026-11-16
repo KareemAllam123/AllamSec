@@ -1,7 +1,16 @@
+from app.config_manager import load_config
+
 """AllamSec security monitoring web dashboard."""
 
 import json
 from contextlib import closing
+
+from database.db_manager import DEFAULT_DB_PATH
+
+from app.alert_dispatcher import (
+    get_notification_history,
+    get_notification_summary,
+)
 
 from flask import (
     Flask,
@@ -28,6 +37,9 @@ APP_VERSION = "0.9.0"
 
 
 def create_app(db_path=None):
+    if db_path is None:
+        db_path = DEFAULT_DB_PATH
+
     app = Flask(
         __name__,
         template_folder="templates",
@@ -39,7 +51,7 @@ def create_app(db_path=None):
         db_path if db_path is not None else DEFAULT_DB_PATH
     )
 
-    
+
     @app.get("/api/windows-events")
     def api_windows_events():
         """Return recent Windows authentication events."""
@@ -395,7 +407,7 @@ def create_app(db_path=None):
             url_for("alert_detail", alert_id=alert_id)
         )
 
-    
+
     @app.route("/events")
     def events_page():
         source = request.args.get(
@@ -526,7 +538,7 @@ def create_app(db_path=None):
             "version": APP_VERSION,
             "status": "online",
         })
-    
+
     @app.get("/windows-events")
     def windows_events_page():
         return render_template(
@@ -535,6 +547,44 @@ def create_app(db_path=None):
             app_version=APP_VERSION,
         )
 
+    @app.route("/notifications")
+    def notifications_page():
+        """Display saved security notification history."""
+
+        notifications = get_notification_history(
+            db_path=db_path,
+            limit=100,
+        )
+
+        summary = get_notification_summary(
+            db_path=db_path,
+        )
+
+        return render_template(
+            "notifications.html",
+            notifications=notifications,
+            summary=summary,
+        )
+
+    @app.route("/api/notifications")
+    def notifications_api():
+        """Return notifications as JSON."""
+
+        notifications = get_notification_history(
+            db_path=db_path,
+            limit=100,
+        )
+
+        summary = get_notification_summary(
+            db_path=db_path,
+        )
+
+        return jsonify({
+            "notifications": notifications,
+            "summary": summary,
+        })
+
+
     return app
 
 
@@ -542,14 +592,20 @@ app = create_app()
 
 
 if __name__ == "__main__":
+    config = load_config()
+    dashboard = config["dashboard"]
+
+    host = dashboard["host"]
+    port = dashboard["port"]
+
     print("=" * 55)
     print("AllamSec Web Dashboard")
     print(f"Version: {APP_VERSION}")
-    print("Open: http://127.0.0.1:5000")
+    print(f"Open: http://{host}:{port}")
     print("=" * 55)
 
     app.run(
-        host="127.0.0.1",
-        port=5000,
+        host=host,
+        port=port,
         debug=False,
     )

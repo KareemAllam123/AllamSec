@@ -1,0 +1,197 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Notification Center</h1>
+        <p>
+            Monitor security alert notifications,
+            delivery attempts, and recovery status.
+        </p>
+    </div>
+</div>
+
+<!-- Notification statistics -->
+
+<div class="notification-stats">
+
+    <div class="notification-stat">
+        <span>Total Notifications</span>
+        <strong>{{ summary.total }}</strong>
+    </div>
+
+    <div class="notification-stat">
+        <span>Pending Preview</span>
+        <strong>{{ summary.preview }}</strong>
+    </div>
+
+    <div class="notification-stat">
+        <span>Emails Sent</span>
+        <strong>{{ summary.sent }}</strong>
+    </div>
+
+    <div class="notification-stat">
+        <span>In Progress</span>
+        <strong>{{ summary.sending }}</strong>
+    </div>
+
+    <div class="notification-stat">
+        <span>Failed</span>
+        <strong>{{ summary.failed }}</strong>
+    </div>
+
+    <div class="notification-stat">
+        <span>Needs Review</span>
+        <strong>{{ summary.review }}</strong>
+    </div>
+
+</div>
+
+<!-- Interrupted delivery warning -->
+
+{% if summary.review > 0 %}
+
+<div class="notification-review-warning">
+
+    <h3>Notification Review Required</h3>
+
+    <p>
+        {{ summary.review }} notification(s) have an
+        uncertain delivery status.
+    </p>
+
+    <p>
+        AllamSec detected an interrupted email delivery.
+        The email may already have been sent.
+        Verify whether the recipient received it before
+        attempting to resend anything.
+    </p>
+
+</div>
+
+{% endif %}
+
+<!-- Notification history -->
+
+<div class="notification-panel">
+
+    <h2>Notification History</h2>
+
+    <div class="notification-table-wrapper">
+
+        <table class="notification-table">
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Alert Type</th>
+                    <th>Severity</th>
+                    <th>Risk</th>
+                    <th>Source IP</th>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th>Attempts</th>
+                    <th>Details</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for notification in notifications %}
+
+                <tr>
+
+                    <td>{{ notification.id }}</td>
+
+                    <td>
+                        <a href="{{ url_for('alert_detail', alert_id=notification.alert_id) }}">
+                            {{ notification.alert_type }}
+                        </a>
+                    </td>
+
+                    <td>
+                        <span class="notification-severity severity-{{ notification.severity | lower }}">
+                            {{ notification.severity }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ notification.risk_score }}/100
+                    </td>
+
+                    <td>
+                        {{ notification.source_ip or "N/A" }}
+                    </td>
+
+                    <td>
+                        {{ notification.username or "N/A" }}
+                    </td>
+
+                    <td>
+                        <span class="notification-status status-{{ notification.status | lower }}">
+                            {{ notification.status }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ notification.attempts }}
+                    </td>
+
+                    <td>
+
+                        {% if notification.status == "REVIEW" %}
+
+                            <span class="notification-detail-review">
+                                Verify email delivery
+                            </span>
+
+                        {% elif notification.status == "FAILED" %}
+
+                            <span class="notification-detail-error">
+                                {{ notification.last_error or "Delivery failed" }}
+                            </span>
+
+                        {% elif notification.status == "SENDING" %}
+
+                            Sending...
+
+                        {% elif notification.status == "SENT" %}
+
+                            Delivered to SMTP server
+
+                        {% else %}
+
+                            Preview only
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+                        {{ notification.created_at }}
+                    </td>
+
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="10" class="notification-empty">
+                        No notifications recorded yet.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}

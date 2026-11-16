@@ -940,3 +940,258 @@ tbody tr:last-child td {
         width: 100%;
     }
 }
+
+
+/* ========================================
+   Phase 10 - Notification Center
+======================================== */
+
+.notification-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin: 24px 0;
+}
+
+.notification-stat {
+    background: #151e2e;
+    border: 1px solid #283449;
+    border-radius: 12px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.notification-stat span {
+    color: #9aa9bf;
+    font-size: 13px;
+}
+
+.notification-stat strong {
+    color: #f2f6ff;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.notification-panel {
+    background: #151e2e;
+    border: 1px solid #283449;
+    border-radius: 12px;
+    padding: 22px;
+    margin-top: 20px;
+}
+
+.notification-panel h2 {
+    margin: 0 0 20px;
+    color: #f2f6ff;
+}
+
+.notification-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.notification-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+}
+
+.notification-table th,
+.notification-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #283449;
+    text-align: left;
+    font-size: 13px;
+}
+
+.notification-table th {
+    color: #9aa9bf;
+    font-weight: 600;
+}
+
+.notification-table td {
+    color: #dce5f4;
+}
+
+.notification-table a {
+    color: #66b3ff;
+    text-decoration: none;
+}
+
+.notification-table a:hover {
+    text-decoration: underline;
+}
+
+.notification-severity,
+.notification-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.notification-severity.severity-critical {
+    background: #551e2b;
+    color: #ff8196;
+}
+
+.notification-severity.severity-high {
+    background: #53341e;
+    color: #ffb76b;
+}
+
+.notification-severity.severity-medium {
+    background: #51451e;
+    color: #f5d36b;
+}
+
+.notification-severity.severity-low {
+    background: #1b453a;
+    color: #6ee7b7;
+}
+
+.notification-status.status-preview {
+    background: #26364e;
+    color: #8dbdff;
+}
+
+.notification-status.status-sent {
+    background: #1b453a;
+    color: #6ee7b7;
+}
+
+.notification-status.status-failed {
+    background: #551e2b;
+    color: #ff8196;
+}
+
+.notification-status.status-sending {
+    background: #51451e;
+    color: #f5d36b;
+}
+
+.notification-empty {
+    text-align: center !important;
+    padding: 35px !important;
+    color: #9aa9bf !important;
+}
+
+@media (max-width: 900px) {
+    .notification-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 500px) {
+    .notification-stats {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================
+   AllamSec - Sidebar Notification Navigation
+========================================== */
+
+.notification-nav-section {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid #283449;
+    width: 100%;
+}
+
+.notification-nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px 12px;
+
+    background: #151e2e;
+    border: 1px solid #283449;
+    border-radius: 12px;
+
+    color: #a9b9d1;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+
+    transition: background 0.2s ease,
+                color 0.2s ease;
+}
+
+.notification-nav-link:hover {
+    background: #1e3049;
+    color: #ffffff;
+}
+
+.notification-nav-link.active {
+    background: #1e3049;
+    color: #59b4ff;
+    border-color: #59b4ff;
+}
+
+.notification-nav-icon {
+    font-size: 19px;
+    line-height: 1;
+}
+
+/* =========================================
+   AllamSec Notification Recovery Dashboard
+   ========================================= */
+
+.notification-review-warning {
+    margin: 20px 0;
+    padding: 20px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-left: 4px solid #f59e0b;
+    border-radius: 10px;
+}
+
+.notification-review-warning h3 {
+    margin: 0 0 10px;
+    color: #f59e0b;
+    font-size: 16px;
+}
+
+.notification-review-warning p {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.notification-status.status-review {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.notification-status.status-sending {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.notification-detail-review {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.notification-detail-error {
+    color: #ef4444;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.notification-table td {
+    vertical-align: middle;
+}
+
+.notification-table-wrapper {
+    overflow-x: auto;
+}

@@ -98,3 +98,61 @@ database/*.db
 database/*.db-journal
 database/*.db-wal
 database/*.db-shm
+
+# Python environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Windows monitoring state
+database/windows_checkpoint.json
+data/windows_checkpoint.json
+**/*checkpoint*.json
+
+# Local logs and exports
+*.log
+logs/
+exports/
+reports/
+
+# User-specific settings
+config.local.json
+
+# IDE and operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.zip
+
+# Coverage reports
+.coverage
+htmlcov/

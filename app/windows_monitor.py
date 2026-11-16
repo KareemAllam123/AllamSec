@@ -14,7 +14,12 @@ from app.windows_checkpoint import (
 from app.windows_event_collector import (
     collect_windows_events_since,
 )
-from app.windows_ingest import ingest_windows_events
+
+from app.windows_ingest import (
+    ingest_windows_events,
+    recover_windows_detection,
+)
+
 
 
 logging.basicConfig(
@@ -28,6 +33,10 @@ logger = logging.getLogger("AllamSec")
 def process_windows_batch(
     checkpoint_path=DEFAULT_CHECKPOINT_PATH,
     max_events=500,
+    detection_threshold=5,
+    detection_window=60,
+    email_enabled=False,
+    minimum_severity="HIGH",
 ):
     """Collect and ingest all available batches up to a safety limit."""
 
@@ -91,7 +100,30 @@ def process_windows_batch(
 
         # This function must finish successfully before we
         # advance the checkpoint.
-        results = ingest_windows_events(events)
+
+        results = ingest_windows_events(
+    events,
+    threshold=detection_threshold,
+    window_seconds=detection_window,
+    email_enabled=email_enabled,
+    minimum_severity=minimum_severity,
+)
+
+        # Recheck the persisted event window before advancing
+        # the checkpoint. This catches alerts that may have
+        # been missed during a previous interrupted run.
+        recovery = recover_windows_detection(
+    events,
+    threshold=detection_threshold,
+    window_seconds=detection_window,
+)
+
+        if recovery["recovered_alerts"]:
+            logger.warning(
+                "Recovered %s previously missing alert(s).",
+                recovery["recovered_alerts"],
+            )
+
 
         new_checkpoint = record_ids[-1]
 
@@ -142,6 +174,10 @@ def monitor_windows(
     max_events=500,
     max_cycles=None,
     checkpoint_path=DEFAULT_CHECKPOINT_PATH,
+    detection_threshold=5,
+    detection_window=60,
+    email_enabled=False,
+    minimum_severity="HIGH",
 ):
     """Continuously monitor Windows authentication events."""
 
@@ -175,11 +211,27 @@ def monitor_windows(
                 cycles,
             )
 
+
             try:
-                results = process_windows_batch(
-                    checkpoint_path=checkpoint_path,
-                    max_events=max_events,
-                )
+                batch_options = {
+                    "checkpoint_path": checkpoint_path,
+                    "max_events": max_events,
+                }
+
+                if (
+                    detection_threshold != 5
+                    or detection_window != 60
+                    or email_enabled
+                    or minimum_severity != "HIGH"
+                ):
+                    batch_options.update({
+                        "detection_threshold": detection_threshold,
+                        "detection_window": detection_window,
+                        "email_enabled": email_enabled,
+                        "minimum_severity": minimum_severity,
+                    })
+
+                results = process_windows_batch(**batch_options)
 
                 logger.info(
                     "Collected=%s | New=%s | "
@@ -196,9 +248,10 @@ def monitor_windows(
                 )
 
             except (RuntimeError, OSError, ValueError):
-                logger.exception(
-                    "Windows event collection failed."
-                )
+                logger.exception("Windows event collection failed.")
+
+                if max_cycles is not None:
+                    raise
 
             if max_cycles is not None and cycles >= max_cycles:
                 break

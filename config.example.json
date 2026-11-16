@@ -1,0 +1,20 @@
+
+{
+  "monitoring": {
+    "interval_seconds": 60,
+    "max_events": 500,
+    "checkpoint_path": "database/windows_checkpoint.json"
+  },
+  "detection": {
+    "brute_force_threshold": 5,
+    "window_seconds": 60
+  },
+  "notifications": {
+    "email_enabled": false,
+    "minimum_severity": "HIGH"
+  },
+  "dashboard": {
+    "host": "127.0.0.1",
+    "port": 5000
+  }
+}

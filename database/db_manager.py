@@ -92,6 +92,10 @@ def initialize_database(db_path=DEFAULT_DB_PATH):
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE INDEX IF NOT EXISTS idx_security_events_source_time
+            ON security_events(event_source, event_timestamp);
+
+
             CREATE TABLE IF NOT EXISTS security_alerts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 alert_hash TEXT NOT NULL UNIQUE,
