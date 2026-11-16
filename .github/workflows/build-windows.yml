@@ -1,0 +1,90 @@
+
+name: Build AllamSec Windows Installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pyinstaller pytest
+
+      - name: Run automated tests
+        shell: pwsh
+        run: python -m pytest -q
+
+      - name: Build AllamSec executable
+        shell: pwsh
+        run: |
+          $buildRoot = Join-Path $env:LOCALAPPDATA "AllamSecDist"
+
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --distpath "$buildRoot" `
+            AllamSec.spec
+
+          $exe = Join-Path $buildRoot "AllamSec\AllamSec.exe"
+
+          if (-not (Test-Path $exe)) {
+            throw "AllamSec executable was not created."
+          }
+
+      - name: Locate Inno Setup compiler
+        id: inno
+        shell: pwsh
+        run: |
+          $candidates = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
+            "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+          )
+
+          $compiler = $candidates |
+            Where-Object { Test-Path $_ } |
+            Select-Object -First 1
+
+          if (-not $compiler) {
+            throw "Inno Setup 6 compiler not found on runner."
+          }
+
+          "compiler=$compiler" >> $env:GITHUB_OUTPUT
+
+      - name: Compile Windows installer
+        shell: pwsh
+        run: |
+          & "${{ steps.inno.outputs.compiler }}" "AllamSec-Setup.iss"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup compilation failed."
+          }
+
+          if (-not (Test-Path "installer-output\AllamSec-Setup-v1.1.0.exe")) {
+            throw "Windows installer was not created."
+          }
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AllamSec-Windows-Installer-v1.1.0
+          path: installer-output/AllamSec-Setup-v1.1.0.exe
+          if-no-files-found: error
+          retention-days: 30
