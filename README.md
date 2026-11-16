@@ -309,3 +309,20 @@ Users are responsible for complying with applicable laws, organizational policie
 AllamSec provides a local security operations dashboard for monitoring Windows Security events, reviewing detected threats, and investigating suspicious activity.
 
 *AllamSec Security Overview displaying collected authentication events, threat severity, and security monitoring statistics.*
+
+## Code signing policy
+
+AllamSec is maintained by [KareemAllam123](https://github.com/KareemAllam123).
+
+**Code-signing roles**
+- Author and committer: KareemAllam123
+- Reviewer: KareemAllam123 (maintainer; external contributions will be reviewed before merging)
+- Release and signing approver: KareemAllam123
+
+**Privacy policy:** [AllamSec Privacy Policy](PRIVACY.md)
+
+AllamSec processes security information locally by default. Optional SMTP notifications can transmit security alert details to a user-configured email provider.
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+
+*SignPath signing is pending approval. Current AllamSec releases are not signed using a SignPath Foundation certificate.*
