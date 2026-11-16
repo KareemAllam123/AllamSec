@@ -6,8 +6,7 @@ from copy import deepcopy
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config.json"
+from app.paths import DATA_ROOT, DEFAULT_CONFIG_PATH
 
 DEFAULT_CONFIG = {
     "monitoring": {
@@ -161,14 +160,13 @@ def load_config(config_path=DEFAULT_CONFIG_PATH):
     return validate_config(config)
 
 
-def resolve_checkpoint_path(config):
-    """Resolve a checkpoint path relative to the project."""
 
-    value = Path(
-        config["monitoring"]["checkpoint_path"]
-    )
+def resolve_checkpoint_path(config):
+    """Resolve the checkpoint relative to writable application data."""
+
+    value = Path(config["monitoring"]["checkpoint_path"])
 
     if value.is_absolute():
         return value
 
-    return PROJECT_ROOT / value
+    return DATA_ROOT / value

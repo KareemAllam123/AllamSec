@@ -165,7 +165,7 @@ def main():
 
     parser.add_argument(
         "--version",
-        default="1.0.1",
+        default="1.1.0",
     )
 
     args = parser.parse_args()

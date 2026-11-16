@@ -33,7 +33,7 @@ from database.db_manager import (
 )
 
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.1.0"
 
 
 def create_app(db_path=None):
