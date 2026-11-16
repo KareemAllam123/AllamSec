@@ -3,7 +3,7 @@
 ### Windows Security Monitoring & Threat Detection Platform
 
 **Version 1.1.0**
-
+![AllamSec Security Dashboard](screenshots/dashboard-overview.png)
 [![AllamSec Tests](https://github.com/KareemAllam123/AllamSec/actions/workflows/tests.yml/badge.svg)](https://github.com/KareemAllam123/AllamSec/actions/workflows/tests.yml)
 [![Latest Release](https://img.shields.io/github/v/release/KareemAllam123/AllamSec)](https://github.com/KareemAllam123/AllamSec/releases)
 ![Platform](https://img.shields.io/badge/Platform-Windows-blue)
@@ -12,6 +12,8 @@
 AllamSec is a Python-based cybersecurity monitoring platform designed to collect Windows Security events, analyze authentication activity, identify suspicious behavior, and visualize security findings through a local web dashboard.
 
 Developed as an independent cybersecurity project, AllamSec demonstrates practical Security Operations Center (SOC) concepts, including log collection, threat detection, event correlation, risk scoring, alert investigation, and security visualization.
+
+![AllamSec Security Dashboard](screenshots/dashboard-overview.png)
 
 ## Key Features
 
@@ -308,7 +310,5 @@ Users are responsible for complying with applicable laws, organizational policie
 ## Dashboard Preview
 
 AllamSec provides a local security operations dashboard for monitoring Windows Security events, reviewing detected threats, and investigating suspicious activity.
-
-![AllamSec Security Dashboard](screenshots/dashboard-overview.png)
 
 *AllamSec Security Overview displaying collected authentication events, threat severity, and security monitoring statistics.*
