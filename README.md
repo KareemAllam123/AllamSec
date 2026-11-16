@@ -12,9 +12,6 @@
 AllamSec is a Python-based cybersecurity monitoring platform designed to collect Windows Security events, analyze authentication activity, identify suspicious behavior, and visualize security findings through a local web dashboard.
 
 Developed as an independent cybersecurity project, AllamSec demonstrates practical Security Operations Center (SOC) concepts, including log collection, threat detection, event correlation, risk scoring, alert investigation, and security visualization.
-
-![AllamSec Security Dashboard](screenshots/dashboard-overview.png)
-
 ## Key Features
 
 ### Windows Security Event Monitoring
