@@ -1,302 +1,217 @@
+
 # AllamSec
 
-### Security Monitoring & Threat Detection Platform
+### Windows Security Monitoring & Threat Detection Platform
 
-**AllamSec** is a Python-based cybersecurity project designed to analyze security logs, detect suspicious authentication activity, and generate security alerts.
+**Version 1.0.1**
 
-The project simulates a lightweight Security Operations Center (SOC) monitoring environment, helping demonstrate fundamental cybersecurity concepts such as log analysis, threat detection, event correlation, and security monitoring.
+AllamSec is a Python-based cybersecurity monitoring application that collects Windows Security events, analyzes authentication activity, detects suspicious behavior, and presents security findings through a local web dashboard.
 
-AllamSec is currently under active development, with additional detection capabilities and a web-based monitoring dashboard planned for future releases.
+Built as an independent cybersecurity project, AllamSec demonstrates security operations center (SOC) concepts including event collection, log analysis, threat detection, event correlation, risk scoring, alert management, and security visualization.
 
----
+## Key Features
 
-## Project Overview
+### Windows Security Event Monitoring
+- Collects authentication-related events from Windows Security logs.
+- Supports continuous monitoring with configurable collection intervals.
+- Tracks collection progress using checkpoints.
+- Stores collected events in a local SQLite database.
 
-AllamSec analyzes simulated authentication logs to identify potentially malicious activity.
+### Threat Detection
+- Detects repeated failed authentication attempts.
+- Identifies potentially suspicious successful logins following repeated failures.
+- Supports configurable detection thresholds and time windows.
+- Includes network event parsing and port-scan detection capabilities.
+- Correlates relevant events to generate security alerts.
 
-The application extracts authentication events, validates log entries, calculates security statistics, and detects suspicious login patterns using configurable detection rules.
+### Risk Scoring and Alert Management
+- Assigns risk scores and severity classifications to detected threats.
+- Records alerts for further investigation.
+- Supports alert status updates and investigation notes.
+- Distinguishes between suspicious activity and confirmed compromise.
 
-Currently, AllamSec can identify:
+### Web Dashboard
+- Local browser-based dashboard built with Flask.
+- Security overview and event statistics.
+- Windows Security event viewer.
+- Security alert management.
+- Threat analytics and visualizations.
+- Notification Center.
 
-- Repeated failed login attempts that may indicate brute-force attacks.
-- Successful logins following repeated failed attempts that may indicate account compromise.
-- Suspicious authentication activity associated with individual IP addresses and user accounts.
-- Invalid or malformed authentication log entries.
+### Notifications
+- Generates notification previews for detected security threats.
+- Supports configurable severity thresholds.
+- Email delivery is disabled by default.
 
-The goal is to develop AllamSec into a lightweight cybersecurity monitoring platform with additional network threat detection, risk scoring, event storage, and security visualization capabilities.
-
-## Current Features
-
-### 1. Authentication Log Analysis
-
-AllamSec reads authentication log files and extracts:
-
-- Event timestamps
-- Authentication event types
-- Usernames
-- Source IP addresses
-
-The application validates each log entry and rejects malformed or unsupported events.
-
-### 2. Authentication Statistics
-
-AllamSec generates a report containing:
-
-- Total authentication events
-- Successful login attempts
-- Failed login attempts
-- Failed-login percentage
-- Unique source IP addresses
-- Authentication statistics for individual IP addresses
-- Invalid log entry counts
-
-### 3. Brute-Force Attack Detection
-
-AllamSec identifies possible brute-force attacks by monitoring repeated failed authentication attempts.
-
-**Default detection settings:**
-
-| Setting | Value |
-|---|---|
-| Failed login threshold | 5 attempts |
-| Detection window | 60 seconds |
-| Alert severity | HIGH |
-| Detection method | Sliding time window |
-| Event correlation | Source IP and username |
-
-When five failed login attempts occur against the same account from the same IP address within 60 seconds, AllamSec generates a security alert.
-
-**Example alert:**
-
-```text
-Alert Type:      POSSIBLE_BRUTE_FORCE
-Severity:        HIGH
-Source IP:       192.168.1.10
-Target Account:  admin
-Failed Attempts: 5
-First Attempt:   2026-10-28 10:00:01
-Last Attempt:    2026-10-28 10:00:09
-Time Window:     60 seconds
-```
-
-### 4. Possible Account Compromise Detection
-
-AllamSec identifies potentially suspicious successful logins occurring shortly after repeated failed authentication attempts.
-
-If a successful login occurs from the same IP address into the same account within 60 seconds of a brute-force detection, AllamSec generates a **CRITICAL** security alert.
-
-**Example alert:**
-
-```text
-Alert Type:      POSSIBLE_ACCOUNT_COMPROMISE
-Severity:        CRITICAL
-Source IP:       192.168.1.10
-Target Account:  admin
-Failed Attempts: 5
-First Attempt:   2026-10-28 10:00:01
-Last Attempt:    2026-10-28 10:00:15
-Time Window:     60 seconds
-```
-
-This detection indicates potentially suspicious authentication activity. It does not confirm that an account has been compromised.
-
-### 5. Automated Testing
-
-AllamSec uses Python's built-in `unittest` framework to test authentication parsing and threat detection.
-
-The current test suite includes:
-
-- Authentication event validation
-- IPv4 and IPv6 address validation
-- Invalid timestamp handling
-- Malformed log detection
-- Brute-force detection
-- Configurable detection thresholds
-- Sliding time-window behavior
-- Multiple attacker detection
-- Possible account compromise detection
-- Duplicate alert prevention
-- Authentication event ordering
-- Successful-login reset behavior
-
-The test suite currently contains **28 tests** across the authentication parser and brute-force detection modules.
-
----
+### Automated Testing
+- 241 passing automated tests and 2 passing subtests as of the v1.0.1 release candidate.
+- Covers event parsing, threat detection, database operations, and other application functionality.
 
 ## Technologies
 
-### Currently Used
+- Python
+- Flask
+- Waitress
+- SQLite
+- HTML, CSS, and JavaScript
+- Windows Security Event Logs
+- Git and GitHub
+- Python unittest and pytest
 
-- **Python:** Core application development and security detection logic
-- **Python unittest:** Automated testing
-- **Git:** Version control
-- **GitHub:** Source code hosting
-- **Python Standard Library:** File handling, timestamps, IP validation, and event processing
+## Installation
 
-### Planned Technologies
+### Requirements
+- Windows 10 or Windows 11
+- Python 3
+- Internet connection for dependency installation
+- Appropriate Windows event-log permissions for live monitoring
 
-- **Flask:** Web-based monitoring dashboard
-- **SQLite:** Security event and alert storage
-- **HTML/CSS/JavaScript:** Dashboard interface
-- **Linux:** Controlled security testing environment
+Download the latest release ZIP from:
 
----
+https://github.com/KareemAllam123/AllamSec/releases
+
+Extract the ZIP into a folder.
+
+### Install using PowerShell
+
+Open PowerShell inside the extracted AllamSec folder and run:
+
+```powershell
+py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -c "from database.db_manager import initialize_database; initialize_database()"
+```
+
+The `setup.bat` installer is also available on systems where Windows permits it.
+
+For additional instructions and troubleshooting, see [INSTALL.md](INSTALL.md).
+
+## Running AllamSec
+
+### Combined Dashboard and Monitor
+
+From the AllamSec directory, run:
+
+```powershell
+.\.venv\Scripts\python.exe start_allamsec.py
+```
+
+This launcher:
+
+1. Starts the local dashboard.
+2. Opens the dashboard in your browser.
+3. Checks administrator permissions.
+4. Starts continuous Windows Security monitoring when administrator privileges are available.
+
+Dashboard URL:
+
+http://127.0.0.1:5000
+
+For live Windows Security monitoring, launch PowerShell as Administrator and run the same command.
+
+Without administrator privileges, the dashboard can still run, but the combined launcher skips Windows monitoring.
+
+### Starting Components Individually
+
+Dashboard:
+
+```powershell
+.\.venv\Scripts\python.exe -m dashboard.server
+```
+
+Windows monitor:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.monitor_launcher
+```
+
+Press `Ctrl+C` to stop the application.
+
+## Configuration
+
+AllamSec uses `config.json` to configure monitoring and detection behavior.
+
+Default settings include:
+
+| Setting | Default |
+|---|---|
+| Monitoring interval | 60 seconds |
+| Maximum events per batch | 500 |
+| Failed login threshold | 5 |
+| Detection window | 60 seconds |
+| Minimum notification severity | HIGH |
+| Email notifications | Disabled |
+| Dashboard address | 127.0.0.1:5000 |
+
+## Detection Examples
+
+### Possible Brute-Force Attack
+
+Five failed authentication attempts within the configured 60-second window can trigger a HIGH-severity alert when they satisfy the detection rule's correlation conditions.
+
+### Possible Account Compromise
+
+A successful authentication following repeated failed attempts can trigger a CRITICAL-severity alert when it meets the detection criteria.
+
+These alerts indicate potentially suspicious behavior and do not establish that an account has actually been compromised.
+
+## Running Tests
+
+From the development repository, install pytest if necessary:
+
+```powershell
+python -m pip install pytest
+```
+
+Then run:
+
+```powershell
+python -m pytest -q
+```
+
+The v1.0.1 release candidate passed 241 tests and 2 subtests.
+
+Tests are included in the development repository but excluded from downloadable release ZIP files.
 
 ## Project Structure
 
 ```text
 AllamSec/
-├── app/
-│   ├── __init__.py
-│   ├── main.py
-│   ├── parser.py
-│   └── analyzer.py
-│
-├── detection/
-│   ├── __init__.py
-│   └── brute_force.py
-│
-├── tests/
-│   ├── test_parser.py
-│   └── test_brute_force.py
-│
-├── data/
-│   └── sample_logs/
-│       └── authentication.log
-│
-├── dashboard/
-│
-├── .gitignore
-├── README.md
-└── requirements.txt
+|-- app/                  # Application and Windows monitoring
+|-- dashboard/            # Web dashboard and static assets
+|-- database/             # SQLite database management
+|-- detection/            # Threat detection modules
+|-- tests/                # Automated tests (development repo)
+|-- tools/                # Release and development utilities
+|-- config.json           # Application configuration
+|-- INSTALL.md            # Detailed installation instructions
+|-- README.md
+|-- requirements.txt
+|-- setup.bat
+|-- start_allamsec.py     # Combined launcher
+|-- start_allamsec.bat    # Dashboard-only launcher
+|-- start_monitor.bat     # Monitor-only launcher
 ```
 
-The `dashboard` directory is reserved for future development.
+## Security Considerations
 
----
+AllamSec is an educational and defensive security monitoring project.
 
-## Installation
+- Only monitor systems and logs you are authorized to access.
+- Keep the dashboard bound to the local loopback address.
+- Do not expose the dashboard directly to the internet.
+- Do not disable Windows security protections to install AllamSec.
+- Use administrator privileges only when necessary.
+- Review generated alerts before drawing conclusions about suspicious activity.
 
-### 1. Clone the Repository
+AllamSec is not a replacement for enterprise SIEM, endpoint detection, or professional incident response solutions.
 
-```bash
-git clone https://github.com/KareemAllam123/AllamSec.git
-```
+## Release Status
 
-Navigate into the project directory:
+**Current Version:** 1.0.1
 
-```bash
-cd AllamSec
-```
+**Status:** Release candidate
 
-### 2. Create a Virtual Environment
+Version 1.0.1 improves installation documentation, introduces a combined application launcher, and updates dashboard version information.
 
-```bash
-python -m venv .venv
-```
-
-### 3. Activate the Virtual Environment
-
-**Windows PowerShell:**
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-**Linux/macOS:**
-
-```bash
-source .venv/bin/activate
-```
-
-### 4. Install Dependencies
-
-```bash
-python -m pip install -r requirements.txt
-```
-
-The current application uses Python's standard library and does not require additional third-party packages.
-
-### 5. Run AllamSec
-
-From the project's root directory:
-
-```bash
-python -m app.main
-```
-
-The application will:
-
-1. Initialize the monitoring environment.
-2. Load authentication logs.
-3. Validate and parse authentication events.
-4. Generate authentication statistics.
-5. Execute brute-force detection.
-6. Identify potentially suspicious successful logins.
-7. Display security alerts in the terminal.
-
----
-
-## Running Automated Tests
-
-Run all automated tests from the project's root directory:
-
-```bash
-python -m unittest discover -s tests -v
-```
-
-Run only the authentication parser tests:
-
-```bash
-python -m unittest discover -s tests -p "test_parser.py" -v
-```
-
-Run only the brute-force detection tests:
-
-```bash
-python -m unittest discover -s tests -p "test_brute_force.py" -v
-```
-
----
-
-## Development Roadmap
-
-AllamSec is being developed incrementally, with each phase
-introducing additional security monitoring capabilities.
-
-| Phase | Development Goal | Status |
-|---|---|---|
-| Phase 1 | Project Setup & Architecture | Completed |
-| Phase 2 | Authentication Log Analysis | Completed |
-| Phase 3 | Threat Detection & Event Correlation | Completed |
-| Phase 4 | Network Monitoring & Port-Scan Detection | Planned |
-| Phase 5 | Risk Scoring & Threat Classification | Planned |
-| Phase 6 | Database Integration | Planned |
-| Phase 7 | Web Dashboard & Visualization | Planned |
-| Phase 8 | Testing, Optimization & Documentation | Planned |
-
----
-
-## Security and Ethical Use
-
-AllamSec is an educational cybersecurity project intended for learning and demonstrating defensive security monitoring techniques.
-
-All sample authentication logs included in this repository are fictional.
-
-Security testing should only be conducted in environments where explicit authorization has been granted.
-
-AllamSec is not intended to replace production-grade security monitoring or intrusion detection systems.
-
----
-
-## Development Status
-
-**Current Version:** 0.3.0
-
-**Status:** Active Development
-
-AllamSec is an ongoing independent cybersecurity project.
-
-Future updates will expand the platform with network monitoring,
-additional detection rules, persistent event storage, and a
-web-based security dashboard.
+Development and additional security capabilities are ongoing.

@@ -52,6 +52,7 @@ EXCLUDED_PATTERNS = {
 
 REQUIRED_FILES = {
     "setup.bat",
+    "start_allamsec.py",
     "start_allamsec.bat",
     "start_monitor.bat",
     "requirements.txt",
@@ -164,7 +165,7 @@ def main():
 
     parser.add_argument(
         "--version",
-        default="1.0.0",
+        default="1.0.1",
     )
 
     args = parser.parse_args()
