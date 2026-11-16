@@ -8,8 +8,7 @@ from pathlib import Path
 from contextlib import contextmanager
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DEFAULT_DB_PATH = BASE_DIR / "database" / "allamsec.db"
+from app.paths import DEFAULT_DB_PATH
 
 
 def normalize_value(value):

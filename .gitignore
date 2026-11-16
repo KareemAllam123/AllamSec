@@ -156,3 +156,12 @@ dist/
 # Coverage reports
 .coverage
 htmlcov/
+
+
+# AllamSec Windows installer and portable releases
+/installer-output/
+/AllamSec-v*-Windows-Portable.zip
+
+# PyInstaller generated files
+/build/
+/dist/

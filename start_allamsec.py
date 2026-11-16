@@ -10,9 +10,10 @@ import webbrowser
 from pathlib import Path
 
 from app.config_manager import DEFAULT_CONFIG_PATH, load_config
+from app.paths import INSTALL_ROOT, IS_FROZEN
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = INSTALL_ROOT
 
 
 def is_administrator():
@@ -27,19 +28,28 @@ def is_administrator():
 
 
 def start_process(module):
-    """Launch an AllamSec component using the current Python interpreter."""
+    """Start a component in Python or packaged executable mode."""
+    if IS_FROZEN:
+        mode = {
+            "dashboard.server": "--dashboard",
+            "app.monitor_launcher": "--monitor",
+        }.get(module)
+
+        if mode is None:
+            raise ValueError(f"Unsupported AllamSec component: {module}")
+
+        command = [sys.executable, mode]
+    else:
+        command = [sys.executable, "-m", module]
+
     return subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            module,
-        ],
+        command,
         cwd=PROJECT_ROOT,
     )
 
 
 def stop_process(process, name):
-    """Request a child process to stop, then wait for it."""
+    """Stop a child process and wait for it to exit."""
     if process is None or process.poll() is not None:
         return
 
@@ -59,7 +69,7 @@ def main():
 
     print("=" * 55)
     print("ALLAMSEC SECURITY PLATFORM")
-    print("Version: 1.0.1")
+    print("Version: 1.1.0")
     print("=" * 55)
 
     dashboard_process = None
@@ -142,5 +152,24 @@ def main():
     return 0
 
 
+def run_component():
+    """Route packaged executable arguments to the correct component."""
+    if getattr(sys, "frozen", False):
+        if len(sys.argv) > 1 and sys.argv[1] == "--dashboard":
+            from dashboard.server import main as dashboard_main
+
+            sys.argv = [sys.argv[0]] + sys.argv[2:]
+            return dashboard_main()
+
+        if len(sys.argv) > 1 and sys.argv[1] == "--monitor":
+            from app.monitor_launcher import main as monitor_main
+
+            sys.argv = [sys.argv[0]] + sys.argv[2:]
+            return monitor_main()
+
+    return main()
+
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    run_component()
