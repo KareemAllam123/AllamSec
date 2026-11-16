@@ -304,3 +304,11 @@ Future improvements may include expanded threat detection, enhanced alert invest
 AllamSec is intended for educational use, authorized security monitoring, and cybersecurity research.
 
 Users are responsible for complying with applicable laws, organizational policies, and system access requirements.
+
+## Dashboard Preview
+
+AllamSec provides a local security operations dashboard for monitoring Windows Security events, reviewing detected threats, and investigating suspicious activity.
+
+![AllamSec Security Dashboard](screenshots/dashboard-overview.png)
+
+*AllamSec Security Overview displaying collected authentication events, threat severity, and security monitoring statistics.*
