@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Windows Installer
+    name: Build and Test Windows Installer
     runs-on: windows-latest
 
     steps:
@@ -80,6 +80,63 @@ jobs:
           if (-not (Test-Path "installer-output\AllamSec-Setup-v1.1.0.exe")) {
             throw "Windows installer was not created."
           }
+
+      - name: Test Windows installer
+        shell: pwsh
+        run: |
+          $installer = Join-Path $PWD "installer-output\AllamSec-Setup-v1.1.0.exe"
+          $installDir = Join-Path $env:RUNNER_TEMP "AllamSecInstallTest"
+          $setupLog = Join-Path $env:RUNNER_TEMP "allamsec-setup.log"
+
+          $process = Start-Process -FilePath $installer `
+            -ArgumentList @(
+              "/VERYSILENT",
+              "/SUPPRESSMSGBOXES",
+              "/NORESTART",
+              "/SP-",
+              "/DIR=`"$installDir`"",
+              "/LOG=`"$setupLog`""
+            ) `
+            -Wait -PassThru
+
+          if ($process.ExitCode -ne 0) {
+            Get-Content $setupLog -Tail 50 -ErrorAction SilentlyContinue
+            throw "Installer failed with exit code $($process.ExitCode)."
+          }
+
+          $installedExe = Join-Path $installDir "AllamSec.exe"
+
+          if (-not (Test-Path $installedExe)) {
+            throw "Installed AllamSec.exe was not found."
+          }
+
+          Write-Host "PASS: AllamSec installer installed the executable."
+
+          $uninstaller = Join-Path $installDir "unins000.exe"
+
+          if (-not (Test-Path $uninstaller)) {
+            throw "Uninstaller was not found."
+          }
+
+          $uninstall = Start-Process -FilePath $uninstaller `
+            -ArgumentList @(
+              "/VERYSILENT",
+              "/SUPPRESSMSGBOXES",
+              "/NORESTART"
+            ) `
+            -Wait -PassThru
+
+          if ($uninstall.ExitCode -ne 0) {
+            throw "Uninstaller failed with exit code $($uninstall.ExitCode)."
+          }
+
+          Start-Sleep -Seconds 3
+
+          if (Test-Path $installedExe) {
+            throw "AllamSec.exe still exists after uninstall."
+          }
+
+          Write-Host "PASS: AllamSec uninstalled successfully."
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
