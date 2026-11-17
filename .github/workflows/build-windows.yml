@@ -138,6 +138,103 @@ jobs:
 
           Write-Host "PASS: AllamSec uninstalled successfully."
 
+          
+      - name: Test installed AllamSec dashboard
+        shell: pwsh
+        run: |
+          $installer = Join-Path $PWD "installer-output\AllamSec-Setup-v1.1.0.exe"
+          $installDir = Join-Path $env:RUNNER_TEMP "AllamSecDashboardTest"
+          $setupLog = Join-Path $env:RUNNER_TEMP "allamsec-dashboard-setup.log"
+          $app = Join-Path $installDir "AllamSec.exe"
+          $url = "http://127.0.0.1:5000/"
+
+          $install = Start-Process -FilePath $installer `
+            -ArgumentList @(
+              "/VERYSILENT",
+              "/SUPPRESSMSGBOXES",
+              "/NORESTART",
+              "/SP-",
+              "/DIR=`"$installDir`"",
+              "/LOG=`"$setupLog`""
+            ) -Wait -PassThru
+
+          if ($install.ExitCode -ne 0) {
+            throw "Installation failed: $($install.ExitCode)"
+          }
+
+          if (-not (Test-Path $app)) {
+            throw "AllamSec.exe was not installed."
+          }
+
+          Write-Host "Starting installed AllamSec..."
+
+          $process = Start-Process -FilePath $app `
+            -WorkingDirectory $installDir `
+            -PassThru
+
+          try {
+            $ready = $false
+
+            for ($i = 0; $i -lt 30; $i++) {
+              Start-Sleep -Seconds 2
+
+              if ($process.HasExited) {
+                throw "AllamSec exited before the dashboard was ready. Exit code: $($process.ExitCode)"
+              }
+
+              try {
+                $response = Invoke-WebRequest `
+                  -Uri $url `
+                  -UseBasicParsing `
+                  -TimeoutSec 3
+
+                if ($response.StatusCode -eq 200) {
+                  $ready = $true
+                  break
+                }
+              }
+              catch {
+                Write-Host "Waiting for dashboard..."
+              }
+            }
+
+            if (-not $ready) {
+              throw "Dashboard did not respond at $url within 60 seconds."
+            }
+
+            Write-Host "PASS: Installed AllamSec launched."
+            Write-Host "PASS: Dashboard returned HTTP 200 at $url"
+          }
+          finally {
+            Get-CimInstance Win32_Process |
+              Where-Object {
+                $_.ExecutablePath -and
+                $_.ExecutablePath.StartsWith(
+                  $installDir,
+                  [System.StringComparison]::OrdinalIgnoreCase
+                )
+              } |
+              ForEach-Object {
+                Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+              }
+
+            $uninstaller = Join-Path $installDir "unins000.exe"
+
+            if (Test-Path $uninstaller) {
+              $uninstall = Start-Process -FilePath $uninstaller `
+                -ArgumentList @(
+                  "/VERYSILENT",
+                  "/SUPPRESSMSGBOXES",
+                  "/NORESTART"
+                ) -Wait -PassThru
+
+              if ($uninstall.ExitCode -ne 0) {
+                Write-Warning "Dashboard test cleanup: uninstall returned $($uninstall.ExitCode)."
+              }
+            }
+          }
+
+
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
